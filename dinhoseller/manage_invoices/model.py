@@ -32,8 +32,8 @@ class Invoice(db.Model):
     invoice_lines = db.relationship("Invoice_line", backref="invoices", lazy=True, cascade="all, delete-orphan")
 
     # Relation plusieurs à plusieurs avec Stock via la table d'association
-    products = db.relationship('Stock', secondary=invoice_products, backref=db.backref('invoice_links', lazy='dynamic'))
-    
+    products = db.relationship('Stock', secondary=invoice_products, back_populates='invoices')
+
     def __repr__(self):
         return f"<Invoice {self.num} (TYPE: {self.type})>"
     

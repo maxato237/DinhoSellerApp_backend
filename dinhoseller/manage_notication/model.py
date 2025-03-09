@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from dinhoseller import db
 
 class Notification(db.Model):
@@ -12,8 +12,6 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
-
-    user = db.relationship("User", backref="notifications", lazy=True)
 
     def __repr__(self):
         return f"<Notification {self.message} (ID: {self.id})>"

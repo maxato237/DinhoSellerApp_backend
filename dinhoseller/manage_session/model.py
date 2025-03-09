@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from dinhoseller import db
 
 class Session(db.Model):

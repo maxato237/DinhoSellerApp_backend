@@ -1,0 +1,1 @@
+from dinhoseller.manage_charge.model import Charge

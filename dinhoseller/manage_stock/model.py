@@ -1,4 +1,5 @@
 from dinhoseller import db
+from dinhoseller.manage_invoices.model import invoice_products
 
 class Stock(db.Model):
     __tablename__ = 'stocks'
@@ -18,7 +19,8 @@ class Stock(db.Model):
     stock_migration_id = db.Column(db.Integer, db.ForeignKey('stock_migration.id'), unique=True)
         
     # Relation plusieurs à plusieurs avec Invoice via la table d'association
-    invoices = db.relationship('Invoice', secondary='invoice_products', backref=db.backref('stocks', lazy='dynamic'), lazy='dynamic')
+    invoices = db.relationship('Invoice', secondary=invoice_products, back_populates='products')
+
 
     # Clé étrangère pour l'utilisateur propriétaire du stock
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

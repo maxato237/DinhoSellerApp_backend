@@ -14,7 +14,6 @@ class User(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
 
     # Relation One-to-One avec UserDetails
-    details_id = db.Column(db.Integer, db.ForeignKey('user_details.id'), nullable=False)
     details = db.relationship("UserDetails", backref="users", uselist=False)
 
     # Relation One-to-Many avec Stock
@@ -31,6 +30,9 @@ class User(db.Model):
 
     # Relation One-to-Many avec StockMigration
     stock_migrations = db.relationship('StockMigration', backref='users', lazy=True)
+
+    notifications = db.relationship('Notification', backref = 'users',lazy=True)
+    sessions = db.relationship('Session', backref = 'users',lazy=True)
     
 
 class UserDetails(db.Model):
@@ -50,6 +52,4 @@ class UserDetails(db.Model):
     salary = db.Column(db.Float, nullable=True)
     group = db.Column(db.String(100), nullable=True)
     department = db.Column(db.String(100), nullable=True)
-
-    # Relation One-to-One avec User
-    user = db.relationship("User", backref="user_details", uselist=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

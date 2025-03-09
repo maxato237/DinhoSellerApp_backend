@@ -4,7 +4,6 @@ from dinhoseller.manage_clients.model import Client
 
 client_bp = Blueprint('client_bp', __name__)
 
-# Create Client
 @client_bp.route('/clients', methods=['POST'])
 def create_client():
     try:
@@ -22,15 +21,14 @@ def create_client():
             type=data.get('type'),
             group=data.get('group'),
             principal_address=data.get('principal_address'),
-            facturation_address=data.get('facturation_address')
+            facturation_address=data.get('facturation_address'),
+            email=data.get('email'),
+            phone=data.get('phone'),
+            specific_price=data.get('specific_price'),
+            payment_requirement=data.get('payment_requirement'),
+            payment_method=data.get('payment_method'),
+            notes=data.get('notes')
         )
-        client.set_code(data.get('code'))
-        client.set_email(data.get('email'))
-        client.set_phone(data.get('phone'))
-        client.set_specific_price(data.get('specific_price'))
-        client.set_payment_requirement(data.get('payment_requirement'))
-        client.set_payment_method(data.get('payment_method'))
-        client.set_notes(data.get('notes'))
 
         db.session.add(client)
         db.session.commit()
@@ -39,7 +37,6 @@ def create_client():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# Get All Clients
 @client_bp.route('/clients', methods=['GET'])
 def get_clients():
     try:
@@ -50,7 +47,6 @@ def get_clients():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Get Client by ID
 @client_bp.route('/clients/<int:client_id>', methods=['GET'])
 def get_client(client_id):
     try:
@@ -61,7 +57,6 @@ def get_client(client_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Update Client
 @client_bp.route('/clients/<int:client_id>', methods=['PUT'])
 def update_client(client_id):
     try:
@@ -83,29 +78,19 @@ def update_client(client_id):
         client.group = data.get('group', client.group)
         client.principal_address = data.get('principal_address', client.principal_address)
         client.facturation_address = data.get('facturation_address', client.facturation_address)
-        
-        if 'code' in data:
-            client.set_code(data['code'])
-        if 'email' in data:
-            client.set_email(data['email'])
-        if 'phone' in data:
-            client.set_phone(data['phone'])
-        if 'specific_price' in data:
-            client.set_specific_price(data['specific_price'])
-        if 'payment_requirement' in data:
-            client.set_payment_requirement(data['payment_requirement'])
-        if 'payment_method' in data:
-            client.set_payment_method(data['payment_method'])
-        if 'notes' in data:
-            client.set_notes(data['notes'])
-        
+        client.email = data.get('email', client.email)
+        client.phone = data.get('phone', client.phone)
+        client.specific_price = data.get('specific_price', client.specific_price)
+        client.payment_requirement = data.get('payment_requirement', client.payment_requirement)
+        client.payment_method = data.get('payment_method', client.payment_method)
+        client.notes = data.get('notes', client.notes)
+
         db.session.commit()
         return jsonify(client.to_dict()), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# Delete Client
 @client_bp.route('/clients/<int:client_id>', methods=['DELETE'])
 def delete_client(client_id):
     try:
