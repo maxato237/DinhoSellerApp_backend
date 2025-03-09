@@ -1,0 +1,1 @@
+from dinhoseller.manage_notication.model import Notification

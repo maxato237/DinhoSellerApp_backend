@@ -1,0 +1,1 @@
+from dinhoseller.manage_suppliers.model import Supplier

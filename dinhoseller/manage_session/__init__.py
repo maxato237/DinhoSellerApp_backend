@@ -1,0 +1,1 @@
+from dinhoseller.manage_session.model import Session
