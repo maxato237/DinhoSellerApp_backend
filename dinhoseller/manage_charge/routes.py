@@ -4,7 +4,6 @@ from dinhoseller.manage_charge.model import Charge
 
 charge_bp = Blueprint('charge_bp', __name__)
 
-
 # Create Charge
 @charge_bp.route('/charges', methods=['POST'])
 def create_charge():

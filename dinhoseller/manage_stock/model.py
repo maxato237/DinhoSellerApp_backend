@@ -4,7 +4,7 @@ from dinhoseller.manage_invoices.model import invoice_products
 class Stock(db.Model):
     __tablename__ = 'stocks'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255))
     description = db.Column(db.String(255), nullable=True)
     category = db.Column(db.String(100))
@@ -46,7 +46,7 @@ class Stock(db.Model):
 class StockMigration(db.Model):
     __tablename__ = 'stock_migration'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     type_migration = db.Column(db.String(50), nullable=False)  # "ajout" ou "retrait"
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False) 
     date_migration = db.Column(db.DateTime, default=db.func.current_timestamp())

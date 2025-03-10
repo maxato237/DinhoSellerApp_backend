@@ -9,7 +9,7 @@ supplier_products = db.Table(
 class Supplier(db.Model):
     __tablename__ = 'suppliers'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255), nullable=False)
     type = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(100), nullable=False)

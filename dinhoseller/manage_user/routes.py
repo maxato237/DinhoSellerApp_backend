@@ -1,6 +1,8 @@
+import re
 from flask import Blueprint, request, jsonify
 from dinhoseller import db
 from dinhoseller.manage_user.model import User, UserDetails
+from werkzeug.security import generate_password_hash
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -12,16 +14,30 @@ def create_user():
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['lastname', 'firstname', 'phone', 'role_id']
+        required_fields = ['lastname', 'firstname', 'phone', 'role_id','password']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+
+        # Validation du format du numéro de téléphone (exemple de format : +1234567890)
+        phone_regex = r'^\+\d{8,15}$'
+        if 'phone' in data and not re.match(phone_regex, data['phone']):
+            return jsonify({'message': 'Invalid phone number format.'}), 400
+
+        # Vérification si l'utilisateur existe déjà
+        existing_phone = User.query.filter_by(phone=data['phone']).first()
+
+        if existing_phone:
+            return jsonify({'message': 'This user already exists.'}), 409
+        
+        hashed_password = generate_password_hash(data.get('password'), method='pbkdf2:sha256', salt_length=8)
 
         user = User(
             lastname=data['lastname'],
             firstname=data['firstname'],
             phone=data['phone'],
-            role_id=data['role_id']
+            role_id=data['role_id'],
+            password=hashed_password
         )
         
         db.session.add(user)

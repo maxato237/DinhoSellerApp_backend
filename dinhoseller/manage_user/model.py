@@ -6,10 +6,11 @@ from flask_sqlalchemy import SQLAlchemy
 class User(db.Model):
     __tablename__ = 'users'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     lastname = db.Column(db.String(100), nullable=False)
     firstname = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False, unique=True)
+    password = db.column(db.String(255), nullable=False)
 
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
 
@@ -38,7 +39,7 @@ class User(db.Model):
 class UserDetails(db.Model):
     __tablename__ = 'user_details'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date_of_birth = db.Column(db.Date, nullable=True)
     genre = db.Column(db.String(10), nullable=True)
     address = db.Column(db.String(255), nullable=True)

@@ -57,7 +57,7 @@ class Invoice(db.Model):
 class Invoice_line(db.Model):
     __tablename__ = 'invoice_lines'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     designation = db.Column(db.String(255), nullable=False)
     PUH = db.Column(db.Float, nullable=False)
     PTH = db.Column(db.Float, nullable=False)
