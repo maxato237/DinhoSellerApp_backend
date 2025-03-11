@@ -22,6 +22,22 @@ class Config:
     SECRET_JWT_KEY = "0ee06252f7b14d3ea2463pf9d4s65j41"
     DEBUG = True 
 
+    # Config email
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
+    MAIL_USERNAME = 'melainenkeng@gmail.com'
+    MAIL_PASSWORD = 'vbpd ofhv muxm vhff'
+    MAIL_DEFAULT_SENDER = 'melainenkeng@gmail.com' 
+
+    # Cookies
+    JWT_TOKEN_LOCATION = ['cookies']
+    JWT_COOKIE_CSRF_PROTECT = True
+    JWT_ACCESS_COOKIE_PATH = '/' 
+    JWT_REFRESH_COOKIE_PATH = '/token/refresh'
+    JWT_COOKIE_SECURE = False
+
 class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{SQL_CONNEXION['user']}:{SQL_CONNEXION['password']}@{SQL_CONNEXION['host']}/{SQL_CONNEXION['database']}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False

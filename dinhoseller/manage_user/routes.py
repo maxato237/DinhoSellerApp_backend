@@ -1,5 +1,6 @@
+import os
 import re
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, json, request, jsonify
 from dinhoseller import db
 from dinhoseller.manage_user.model import User, UserDetails
 from werkzeug.security import generate_password_hash
@@ -7,10 +8,10 @@ from werkzeug.security import generate_password_hash
 user_bp = Blueprint('user_bp', __name__)
 
 # Create User
-@user_bp.route('/users', methods=['POST'])
+@user_bp.route('/create', methods=['POST'])
 def create_user():
     try:
-        data = request.json
+        data = request.form
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
@@ -20,7 +21,7 @@ def create_user():
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
         # Validation du format du numéro de téléphone (exemple de format : +1234567890)
-        phone_regex = r'^\+\d{8,15}$'
+        phone_regex = r'^\d{8,15}$'
         if 'phone' in data and not re.match(phone_regex, data['phone']):
             return jsonify({'message': 'Invalid phone number format.'}), 400
 
@@ -42,6 +43,19 @@ def create_user():
         
         db.session.add(user)
         db.session.commit()
+
+        # Vérifier si le fichier existe
+        if os.path.exists('dinhoseller/app_settings.json'):
+            with open('dinhoseller/app_settings.json', "r", encoding="utf-8") as file:
+                settings = json.load(file)
+
+            # Modifier la valeur de isSuperAdminConfigured
+            settings["isSuperAdminConfigured"] = True
+
+            # Écrire les modifications dans le fichier
+            with open('dinhoseller/app_settings.json', "w", encoding="utf-8") as file:
+                json.dump(settings, file, indent=4)
+
         return jsonify(user.to_dict()), 201
     except Exception as e:
         db.session.rollback()

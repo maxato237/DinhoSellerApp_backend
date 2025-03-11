@@ -9,8 +9,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     lastname = db.Column(db.String(100), nullable=False)
     firstname = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=False, unique=True)
-    password = db.column(db.String(255), nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
 
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
 
@@ -34,6 +34,16 @@ class User(db.Model):
 
     notifications = db.relationship('Notification', backref = 'users',lazy=True)
     sessions = db.relationship('Session', backref = 'users',lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'lastname': self.lastname,
+            'firstname': self.firstname,
+            'phone': self.phone,
+            'role_id': self.role_id,
+            'password': self.password
+        }
     
 
 class UserDetails(db.Model):

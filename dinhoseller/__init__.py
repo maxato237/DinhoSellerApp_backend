@@ -27,7 +27,7 @@ def insert_initial_data():
 
 def create_app(config_class=None):
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, supports_credentials=True)
 
         # Charge la configuration fournie, sinon utilise la configuration par défaut
     if config_class:
@@ -43,13 +43,13 @@ def create_app(config_class=None):
         app.config.from_object(config)
 
     # Configuration JWT et autres paramètres
-    # app.config['SECRET_KEY'] = config.Config.SECRET_KEY
-    # app.config['JWT_TOKEN_LOCATION'] = config.Config.JWT_TOKEN_LOCATION
-    # app.config['JWT_COOKIE_CSRF_PROTECT'] = config.Config.JWT_COOKIE_CSRF_PROTECT
-    # app.config['JWT_ACCESS_COOKIE_PATH'] = config.Config.JWT_ACCESS_COOKIE_PATH
-    # app.config['JWT_REFRESH_COOKIE_PATH'] = config.Config.JWT_REFRESH_COOKIE_PATH
-    # app.config['JWT_COOKIE_SECURE'] = False
-    # app.config['JWT_SESSION_COOKIE'] = False
+    app.config['SECRET_KEY'] = config.Config.SECRET_KEY
+    app.config['JWT_TOKEN_LOCATION'] = config.Config.JWT_TOKEN_LOCATION
+    app.config['JWT_COOKIE_CSRF_PROTECT'] = config.Config.JWT_COOKIE_CSRF_PROTECT
+    app.config['JWT_ACCESS_COOKIE_PATH'] = config.Config.JWT_ACCESS_COOKIE_PATH
+    app.config['JWT_REFRESH_COOKIE_PATH'] = config.Config.JWT_REFRESH_COOKIE_PATH
+    app.config['JWT_COOKIE_SECURE'] = False
+    app.config['JWT_SESSION_COOKIE'] = False
 
     db.init_app(app)
     migrate.init_app(app, db)
