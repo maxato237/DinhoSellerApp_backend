@@ -10,18 +10,18 @@ class Supplier(db.Model):
     __tablename__ = 'suppliers'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255), nullable=False)
-    type = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(255), nullable=False,unique=True)
     status = db.Column(db.String(100), nullable=False)
-    address = db.Column(db.String(255), )
-    city = db.Column(db.String(100), )
-    postal_code = db.Column(db.String(20), )
-    country = db.Column(db.String(100), )
-    phone = db.Column(db.String(20), nullable=False)
-    email = db.Column(db.String(255), unique=True, )
-    website = db.Column(db.String(255), nullable=True)
-    preferred_payment_method = db.Column(db.String(100), nullable=False)
-    added_at = db.Column(db.Date, nullable=False)
+    address = db.Column(db.String(255))
+    city = db.Column(db.String(100))
+    postalCode = db.Column(db.String(20))
+    country = db.Column(db.String(100))
+    phone = db.Column(db.String(20), nullable=False,unique=True)
+    email = db.Column(db.String(255), unique=True)
+    website = db.Column(db.String(255), nullable=True,unique=True)
+    preferredPaymentMethod = db.Column(db.String(100), nullable=False)
+    addedAt = db.Column(db.Date, nullable=False)
+    productsSupplied = db.Column(db.JSON)
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
@@ -35,16 +35,16 @@ class Supplier(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'type': self.type,
             'status': self.status,
             'address': self.address,
             'city': self.city,
-            'postalCode': self.postal_code,
+            'postalCode': self.postalCode,
             'country': self.country,
             'phone': self.phone,
             'email': self.email,
             'website': self.website,
-            'preferredPaymentMethod': self.preferred_payment_method,
-            'productsSupplied': [product.to_dict() for product in self.products],
-            'addedAt': self.added_at.strftime('%Y-%m-%d') if self.added_at else None
+            'preferredPaymentMethod': self.preferredPaymentMethod,
+            'productsSupplied': self.productsSupplied,
+            'addedAt': self.addedAt.strftime('%Y-%m-%d') if self.addedAt else None,
+            'user_id' : self.user_id
         }

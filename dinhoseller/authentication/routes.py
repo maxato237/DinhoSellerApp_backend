@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import random
 import string
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token
 import jwt
 
 from dinhoseller.config import Config
@@ -39,10 +40,11 @@ def login():
             return jsonify({'message' :'Utilisateur introuvable'}),400
 
     
-        if(rememberme):
-            token = month_refresh_token(phone)
+        if(rememberme == True):
+            token = month_refresh_token(user.id, user.role_id, user.firstname)
+            print(rememberme)
         else:
-            token = generate_token(phone)
+            token = generate_token(user.id, user.role_id, user.firstname)
 
         user_agent = request.user_agent.string
         usersession = Session.query.filter_by(user_id = user.id, user_agent = user_agent ).first()
@@ -94,29 +96,30 @@ def logout():
 def refresh_token(phone):
     token_payload = {
       'phone': phone,
-      'exp': datetime.utcnow() + timedelta(hours=1)
+      'exp': datetime.utcnow() + timedelta(hours=24)
     }
     token = jwt.encode(token_payload, Config.SECRET_JWT_KEY, algorithm='HS256')
     return token
 
-def month_refresh_token(phone):
-    token_payload = {
-      'phone': phone,
-      'exp': datetime.utcnow() + timedelta(days=30)
+def month_refresh_token(id,role_id,firstname):
+    claims = {
+        "role_id": role_id,
+        "firstname": firstname,
+        "sub": str(id)
     }
-    token = jwt.encode(token_payload, Config.SECRET_JWT_KEY, algorithm='HS256')
+    token = create_access_token(identity=str(id), expires_delta=timedelta(days=30), additional_claims=claims)
     return token
 
 def generer_code_pin():
     return ''.join([str(random.randint(0, 9)) for _ in range(8)])
 
-def generate_token(phone):
-    token_payload = {
-      'phone': phone,
-      'exp': datetime.utcnow() + timedelta(hours=1)
+def generate_token(id,role_id,firstname):
+    claims = {
+        "role_id": role_id,
+        "firstname": firstname,
+        "sub": str(id)
     }
-    token = jwt.encode(token_payload,  Config.SECRET_JWT_KEY, algorithm='HS256')
-
+    token = create_access_token(identity=str(id), expires_delta=timedelta(hours=1), additional_claims=claims)
     return token
 
 def generate_random_string():

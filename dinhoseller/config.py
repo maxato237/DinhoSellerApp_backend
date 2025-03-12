@@ -31,12 +31,10 @@ class Config:
     MAIL_PASSWORD = 'vbpd ofhv muxm vhff'
     MAIL_DEFAULT_SENDER = 'melainenkeng@gmail.com' 
 
-    # Cookies
-    JWT_TOKEN_LOCATION = ['cookies']
-    JWT_COOKIE_CSRF_PROTECT = True
-    JWT_ACCESS_COOKIE_PATH = '/' 
-    JWT_REFRESH_COOKIE_PATH = '/token/refresh'
-    JWT_COOKIE_SECURE = False
+    JWT_TOKEN_LOCATION = ['headers'] 
+    JWT_HEADER_NAME = "Authorization"
+    JWT_HEADER_TYPE = "Bearer"
+
 
 class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{SQL_CONNEXION['user']}:{SQL_CONNEXION['password']}@{SQL_CONNEXION['host']}/{SQL_CONNEXION['database']}"

@@ -1,11 +1,13 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from dinhoseller import config
 
 db = SQLAlchemy()
 migrate = Migrate()
+jwt = JWTManager()
 
 class Role(db.Model):
     __tablename__ = "roles"
@@ -44,15 +46,15 @@ def create_app(config_class=None):
 
     # Configuration JWT et autres paramètres
     app.config['SECRET_KEY'] = config.Config.SECRET_KEY
+    app.config['JWT_SECRET_KEY'] = config.Config.SECRET_JWT_KEY
     app.config['JWT_TOKEN_LOCATION'] = config.Config.JWT_TOKEN_LOCATION
-    app.config['JWT_COOKIE_CSRF_PROTECT'] = config.Config.JWT_COOKIE_CSRF_PROTECT
-    app.config['JWT_ACCESS_COOKIE_PATH'] = config.Config.JWT_ACCESS_COOKIE_PATH
-    app.config['JWT_REFRESH_COOKIE_PATH'] = config.Config.JWT_REFRESH_COOKIE_PATH
     app.config['JWT_COOKIE_SECURE'] = False
     app.config['JWT_SESSION_COOKIE'] = False
 
     db.init_app(app)
     migrate.init_app(app, db)
+    jwt.init_app(app)
+
 
     with app.app_context():
         from dinhoseller.authentication.routes import auth
