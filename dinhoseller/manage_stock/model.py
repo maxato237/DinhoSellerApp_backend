@@ -5,7 +5,9 @@ class Stock(db.Model):
     __tablename__ = 'stocks'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255))
+    name = db.Column(db.String(255), unique=True)
+    reference = db.Column(db.String(255), unique=True)
+    code = db.Column(db.String(255), unique=True)
     description = db.Column(db.String(255), nullable=True)
     category = db.Column(db.String(100))
     price = db.Column(db.Float, nullable=False)
@@ -13,6 +15,7 @@ class Stock(db.Model):
     weight = db.Column(db.Float, nullable=True)
     brand = db.Column(db.String(100))
     added_date = db.Column(db.Date, nullable=False)
+    expiration_date = db.Column(db.Date)
     minimum_stock = db.Column(db.Integer, nullable=False)
     supplier = db.Column(db.String(255), nullable=False)
 
@@ -32,15 +35,18 @@ class Stock(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'code': self.code,
             'description': self.description,
+            'reference': self.reference,
             'category': self.category,
             'price': self.price,
             'quantity': self.quantity,
+            'supplier': self.supplier,
             'weight': self.weight,
             'brand': self.brand,
             'addedDate': self.added_date.strftime('%Y-%m-%d') if self.added_date else None,
             'minimumStock': self.minimum_stock,
-            'suppliers': [supplier.to_dict() for supplier in self.suppliers]
+            'suppliers': self.suppliers
         }
 
 class StockMigration(db.Model):

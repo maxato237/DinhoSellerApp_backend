@@ -26,6 +26,9 @@ def login():
         phone = data['phone']
         password = data['password']
         rememberme = data['rememberme']
+
+        print("ici c'est rememberme :", rememberme)
+
         if not phone or not password:
             return jsonify({'message' :'Veillez bien saisir les données '})
 
@@ -40,7 +43,7 @@ def login():
             return jsonify({'message' :'Utilisateur introuvable'}),400
 
     
-        if(rememberme == True):
+        if(rememberme == "true"):
             token = month_refresh_token(user.id, user.role_id, user.firstname)
             print(rememberme)
         else:
@@ -107,7 +110,7 @@ def month_refresh_token(id,role_id,firstname):
         "firstname": firstname,
         "sub": str(id)
     }
-    token = create_access_token(identity=str(id), expires_delta=timedelta(days=30), additional_claims=claims)
+    token = create_access_token(identity=str(id), additional_claims=claims)
     return token
 
 def generer_code_pin():
@@ -119,7 +122,7 @@ def generate_token(id,role_id,firstname):
         "firstname": firstname,
         "sub": str(id)
     }
-    token = create_access_token(identity=str(id), expires_delta=timedelta(hours=1), additional_claims=claims)
+    token = create_access_token(identity=str(id), expires_delta=timedelta(hours=24), additional_claims=claims)
     return token
 
 def generate_random_string():

@@ -14,23 +14,16 @@ def create_user():
         data = request.form
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
-
         required_fields = ['lastname', 'firstname', 'phone', 'role_id','password']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
-
-        # Validation du format du numéro de téléphone (exemple de format : +1234567890)
         phone_regex = r'^\d{8,15}$'
         if 'phone' in data and not re.match(phone_regex, data['phone']):
             return jsonify({'message': 'Invalid phone number format.'}), 400
-
-        # Vérification si l'utilisateur existe déjà
         existing_phone = User.query.filter_by(phone=data['phone']).first()
-
         if existing_phone:
             return jsonify({'message': 'This user already exists.'}), 409
-        
         hashed_password = generate_password_hash(data.get('password'), method='pbkdf2:sha256', salt_length=8)
 
         user = User(

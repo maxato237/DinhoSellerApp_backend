@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, request, jsonify
 from dinhoseller import db
 from dinhoseller.manage_invoices.model import Invoice, Invoice_line
@@ -5,7 +6,7 @@ from dinhoseller.manage_invoices.model import Invoice, Invoice_line
 invoice_bp = Blueprint('invoice_bp', __name__)
 
 # Create Invoice
-@invoice_bp.route('/invoices', methods=['POST'])
+@invoice_bp.route('/add', methods=['POST'])
 def create_invoice():
     try:
         data = request.json
@@ -16,6 +17,9 @@ def create_invoice():
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+        
+        date_added = datetime.strptime(data['dateAdded'], "%Y-%m-%d") if 'dateAdded' in data else datetime.utcnow()
+        echeance = datetime.strptime(data['echeance'], "%Y-%m-%d") if data.get('echeance') else None
 
         invoice = Invoice(
             type=data.get('type'),
@@ -25,10 +29,13 @@ def create_invoice():
             TTC=data.get('TTC'),
             ECOMP=data.get('ECOMP'),
             avance=data.get('avance'),
-            echeance=data.get('echeance'),
+            echeance=echeance,
             client_id=data.get('client_id'),
-            user_id=data.get('user_id')
+            user_id=data.get('user_id'),
+            dateAdded=date_added,
         )
+
+
 
         db.session.add(invoice)
         db.session.commit()

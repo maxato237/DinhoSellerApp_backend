@@ -21,7 +21,6 @@ class Supplier(db.Model):
     website = db.Column(db.String(255), nullable=True,unique=True)
     preferredPaymentMethod = db.Column(db.String(100), nullable=False)
     addedAt = db.Column(db.Date, nullable=False)
-    productsSupplied = db.Column(db.JSON)
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
@@ -44,7 +43,23 @@ class Supplier(db.Model):
             'email': self.email,
             'website': self.website,
             'preferredPaymentMethod': self.preferredPaymentMethod,
-            'productsSupplied': self.productsSupplied,
             'addedAt': self.addedAt.strftime('%Y-%m-%d') if self.addedAt else None,
             'user_id' : self.user_id
+        }
+    
+
+class ProductSupplied(db.Model):
+    supplierName = db.Column(db.String(255), nullable=False)
+    productName = db.Column(db.String(255), nullable=False)
+    supplierPrice = db.Column(db.Integer, nullable=False)
+
+    __table_args__ = (
+        db.PrimaryKeyConstraint('supplierName', 'productName'),
+    )
+
+    def to_dict(self):
+        return {
+            'supplierName': self.supplierName,
+            'productName': self.productName,
+            'supplierPrice': self.supplierPrice
         }

@@ -5,7 +5,6 @@ class Client(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)  
     name = db.Column(db.String(255), nullable=False)
-    type = db.Column(db.String(100), nullable=False)
     group = db.Column(db.Integer)
     principal_address = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
@@ -15,6 +14,11 @@ class Client(db.Model):
     facturation_address = db.Column(db.String(255))
     payment_method = db.Column(db.String(100), nullable=False)  
     notes = db.Column(db.Text) 
+    representant = db.Column(db.Integer)
+    assujetti_tva = db.Column(db.Boolean, default = False)
+    concern_ecomp = db.Column(db.Boolean, default = False)
+
+
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
@@ -28,7 +32,6 @@ class Client(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "type": self.type,
             "group": self.group,
             "principal_address": self.principal_address,
             "email": self.email,
@@ -37,5 +40,8 @@ class Client(db.Model):
             "payment_requirement": self.payment_requirement,
             "facturation_address": self.facturation_address,
             "payment_method": self.payment_method,
-            "notes": self.notes
+            "notes": self.notes,
+            "representant": self.representant,
+            "assujetti_tva": self.assujetti_tva,
+            "concern_ecomp": self.concern_ecomp
         }

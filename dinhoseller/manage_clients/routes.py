@@ -11,14 +11,13 @@ def create_client():
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['name', 'type', 'phone', 'payment_method']
+        required_fields = ['name', 'phone', 'payment_method']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
         client = Client(
             name=data.get('name'),
-            type=data.get('type'),
             group=data.get('group'),
             principal_address=data.get('principal_address'),
             facturation_address=data.get('facturation_address'),
@@ -27,7 +26,10 @@ def create_client():
             specific_price=data.get('specific_price'),
             payment_requirement=data.get('payment_requirement'),
             payment_method=data.get('payment_method'),
-            notes=data.get('notes')
+            notes=data.get('notes'),
+            representant=data.get('representant'),
+            assujetti_tva=data.get('assujetti_tva', False),
+            concern_ecomp=data.get('concern_ecomp', False)
         )
 
         db.session.add(client)
@@ -36,7 +38,7 @@ def create_client():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
+        
 @client_bp.route('/clients', methods=['GET'])
 def get_clients():
     try:
@@ -68,13 +70,12 @@ def update_client(client_id):
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['name', 'type', 'phone', 'payment_method']
+        required_fields = ['name', 'phone', 'payment_method']
         missing_fields = [field for field in required_fields if field not in data and getattr(client, field, None) is None]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
         client.name = data.get('name', client.name)
-        client.type = data.get('type', client.type)
         client.group = data.get('group', client.group)
         client.principal_address = data.get('principal_address', client.principal_address)
         client.facturation_address = data.get('facturation_address', client.facturation_address)
@@ -84,6 +85,9 @@ def update_client(client_id):
         client.payment_requirement = data.get('payment_requirement', client.payment_requirement)
         client.payment_method = data.get('payment_method', client.payment_method)
         client.notes = data.get('notes', client.notes)
+        client.representant = data.get('representant', client.representant)
+        client.assujetti_tva = data.get('assujetti_tva', client.assujetti_tva)
+        client.concern_ecomp = data.get('concern_ecomp', client.concern_ecomp)
 
         db.session.commit()
         return jsonify(client.to_dict()), 200

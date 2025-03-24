@@ -1,36 +1,74 @@
+from datetime import datetime
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import get_jwt, jwt_required
 from dinhoseller import db
 from dinhoseller.manage_stock.model import Stock, StockMigration
+from dinhoseller.manage_suppliers.model import ProductSupplied
+import json
 
 
 stock_bp = Blueprint('stock_bp', __name__)
 
 # Create Stock
-@stock_bp.route('/stocks', methods=['POST'])
+@stock_bp.route('/add', methods=['POST'])
+@jwt_required()
 def create_stock():
     try:
         data = request.json
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['name', 'category', 'price', 'quantity', 'added_date', 'minimum_stock', 'supplier']
+        required_fields = ['code','designation', 'reference', 'category', 'quantityInStock', 'reorderThreshold', 'supplier']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+        
+        existing_stock = Stock.query.filter(
+            (Stock.name == data.get('designation')) |
+            (Stock.reference == data.get('reference')) |
+            (Stock.code == data.get('code'))
+        ).first()
+
+        if existing_stock:
+             jsonify({'error': 'Un produit avec la même désignation, référence ou code existe déjà'}), 400
+        
+        # Find all supplier prices for the given product
+        product_name = data.get('designation')
+        products_supplied = ProductSupplied.query.filter_by(productName=product_name).all()
+
+        if not products_supplied:
+            return jsonify({'error': 'Pas de fournisseur existant pour ce produit'}), 404
+
+        # Get the highest supplier price
+        highest_price = max(product.supplierPrice for product in products_supplied)
+
+        with open('dinhoseller/app_settings.json',"r", encoding="utf-8") as f:
+            app_settings = json.load(f)
+
+        benef = app_settings.get('BENEF')
+
+        price_with_benef = highest_price + highest_price*benef
+
+        print(highest_price,price_with_benef)
+
+        decodeToken = get_jwt()
 
         stock = Stock(
-            name=data.get('name'),
-            description=data.get('description'),
-            category=data.get('category'),
-            price=data.get('price'),
-            quantity=data.get('quantity'),
+            code=data.get('code'),
+            name=data.get('designation'),
+            reference=data.get('reference'),
+            category=data['category']['name'],
+            quantity=data.get('quantityInStock'),
             weight=data.get('weight'),
             brand=data.get('brand'),
-            added_date=data.get('added_date'),
-            minimum_stock=data.get('minimum_stock'),
-            supplier=data.get('supplier'),
-            user_id=data.get('user_id')  # Assuming this comes in the request
+            added_date= datetime.utcnow()  ,
+            minimum_stock=data.get('reorderThreshold'),
+            supplier= data['supplier']['name'],
+            price = price_with_benef,
+            user_id=int(decodeToken.get("sub"))
         )
+
+        print(stock)
 
         db.session.add(stock)
         db.session.commit()
@@ -40,7 +78,8 @@ def create_stock():
         return jsonify({'error': str(e)}), 500
 
 # Get All Stocks
-@stock_bp.route('/stocks', methods=['GET'])
+@stock_bp.route('/all', methods=['GET'])
+@jwt_required()
 def get_stocks():
     try:
         stocks = Stock.query.all()
@@ -51,7 +90,8 @@ def get_stocks():
         return jsonify({'error': str(e)}), 500
 
 # Get Stock by ID
-@stock_bp.route('/stocks/<int:stock_id>', methods=['GET'])
+@stock_bp.route('/getProductById/<int:stock_id>', methods=['GET'])
+@jwt_required()
 def get_stock(stock_id):
     try:
         stock = Stock.query.get(stock_id)
@@ -60,9 +100,29 @@ def get_stock(stock_id):
         return jsonify(stock.to_dict()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# Get all suppliers for a given product
+@stock_bp.route('/suppliers_by_product/<string:product_name>', methods=['GET'])
+@jwt_required()
+def get_products_supplied_by_product(product_name):
+    try:
+        # Récupérer tous les fournisseurs pour le produit spécifié
+        products_supplied = ProductSupplied.query.filter_by(productName=product_name).all()
+
+        if not products_supplied:
+            return jsonify({'message': 'Aucun fournisseur trouvé pour ce produit'}), 404
+
+        # Retourner les produits fournis sous forme de dictionnaire
+        products_list = [product.to_dict() for product in products_supplied]
+
+        return jsonify(products_list), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 # Update Stock
 @stock_bp.route('/stocks/<int:stock_id>', methods=['PUT'])
+@jwt_required()
 def update_stock(stock_id):
     try:
         stock = Stock.query.get(stock_id)
@@ -73,7 +133,7 @@ def update_stock(stock_id):
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['name', 'category', 'price', 'quantity', 'added_date', 'minimum_stock', 'supplier']
+        required_fields = ['name','reference', 'category', 'price', 'quantity', 'added_date', 'minimum_stock', 'supplier']
         missing_fields = [field for field in required_fields if field not in data and getattr(stock, field, None) is None]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
@@ -96,7 +156,8 @@ def update_stock(stock_id):
         return jsonify({'error': str(e)}), 500
 
 # Delete Stock
-@stock_bp.route('/stocks/<int:stock_id>', methods=['DELETE'])
+@stock_bp.route('/delete/<int:stock_id>', methods=['DELETE'])
+@jwt_required()
 def delete_stock(stock_id):
     try:
         stock = Stock.query.get(stock_id)
@@ -113,6 +174,7 @@ def delete_stock(stock_id):
 
 # Create Stock Migration
 @stock_bp.route('/stock_migrations', methods=['POST'])
+@jwt_required()
 def create_stock_migration():
     try:
         data = request.json
@@ -139,6 +201,7 @@ def create_stock_migration():
 
 # Get All Stock Migrations
 @stock_bp.route('/stock_migrations', methods=['GET'])
+@jwt_required()
 def get_stock_migrations():
     try:
         stock_migrations = StockMigration.query.all()
@@ -150,6 +213,7 @@ def get_stock_migrations():
 
 # Get Stock Migration by ID
 @stock_bp.route('/stock_migrations/<int:migration_id>', methods=['GET'])
+@jwt_required()
 def get_stock_migration(migration_id):
     try:
         stock_migration = StockMigration.query.get(migration_id)
@@ -161,6 +225,7 @@ def get_stock_migration(migration_id):
 
 # Update Stock Migration
 @stock_bp.route('/stock_migrations/<int:migration_id>', methods=['PUT'])
+@jwt_required()
 def update_stock_migration(migration_id):
     try:
         stock_migration = StockMigration.query.get(migration_id)
@@ -183,6 +248,7 @@ def update_stock_migration(migration_id):
 
 # Delete Stock Migration
 @stock_bp.route('/stock_migrations/<int:migration_id>', methods=['DELETE'])
+@jwt_required()
 def delete_stock_migration(migration_id):
     try:
         stock_migration = StockMigration.query.get(migration_id)

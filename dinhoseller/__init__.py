@@ -55,6 +55,9 @@ def create_app(config_class=None):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return jsonify({'error': 'Votre session a expiré. Veuillez vous reconnecter.'}), 401
 
     with app.app_context():
         from dinhoseller.authentication.routes import auth
@@ -70,7 +73,7 @@ def create_app(config_class=None):
         app.register_blueprint(auth, url_prefix='/auth')
         app.register_blueprint(client_bp, url_prefix='/clients')
         app.register_blueprint(invoice_bp, url_prefix='/invoices')
-        app.register_blueprint(stock_bp, url_prefix='/stock')
+        app.register_blueprint(stock_bp, url_prefix='/stocks')
         app.register_blueprint(supplier_bp, url_prefix='/suppliers')
         app.register_blueprint(user_bp, url_prefix='/users')
         app.register_blueprint(charge_bp, url_prefix='/charges')
