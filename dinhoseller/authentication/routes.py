@@ -110,7 +110,7 @@ def month_refresh_token(id,role_id,firstname):
         "firstname": firstname,
         "sub": str(id)
     }
-    token = create_access_token(identity=str(id), additional_claims=claims)
+    token = create_access_token(identity=str(id), additional_claims=claims, expires_delta=timedelta(days=30))
     return token
 
 def generer_code_pin():

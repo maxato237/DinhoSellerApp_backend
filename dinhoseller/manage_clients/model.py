@@ -9,7 +9,7 @@ class Client(db.Model):
     principal_address = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
     phone = db.Column(db.String(20), nullable=False, unique=True)  
-    specific_price = db.Column(db.String(255), nullable=True)  
+    specific_price = db.Column(db.Float, nullable=True)  
     payment_requirement = db.Column(db.String(255), nullable=True)  
     facturation_address = db.Column(db.String(255))
     payment_method = db.Column(db.String(100), nullable=False)  
@@ -17,8 +17,6 @@ class Client(db.Model):
     representant = db.Column(db.Integer)
     assujetti_tva = db.Column(db.Boolean, default = False)
     concern_ecomp = db.Column(db.Boolean, default = False)
-
-
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 

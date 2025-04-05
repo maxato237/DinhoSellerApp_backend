@@ -13,7 +13,7 @@ def create_invoice():
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['type', 'status', 'TVA', 'HT', 'TTC', 'client_id', 'user_id']
+        required_fields = ['type', 'status','HT','client_id', 'user_id']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
@@ -35,14 +35,13 @@ def create_invoice():
             dateAdded=date_added,
         )
 
-
-
         db.session.add(invoice)
         db.session.commit()
         return jsonify(invoice.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
+
 
 # Get All Invoices
 @invoice_bp.route('/invoices', methods=['GET'])
@@ -53,7 +52,7 @@ def get_invoices():
             return jsonify({'message': 'No invoices found'}), 404
         return jsonify([invoice.to_dict() for invoice in invoices]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get Invoice by ID
 @invoice_bp.route('/invoices/<int:invoice_num>', methods=['GET'])
@@ -64,7 +63,7 @@ def get_invoice(invoice_num):
             return jsonify({'error': 'Invoice not found'}), 404
         return jsonify(invoice.to_dict()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Update Invoice
 @invoice_bp.route('/invoices/<int:invoice_num>', methods=['PUT'])
@@ -98,7 +97,7 @@ def update_invoice(invoice_num):
         return jsonify(invoice.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Delete Invoice
 @invoice_bp.route('/invoices/<int:invoice_num>', methods=['DELETE'])
@@ -113,7 +112,7 @@ def delete_invoice(invoice_num):
         return jsonify({'message': 'Invoice deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 
 # Create Invoice Line
@@ -146,7 +145,7 @@ def create_invoice_line(invoice_num):
         return jsonify(invoice_line.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get All Lines for a Specific Invoice
 @invoice_bp.route('/invoices/<int:invoice_num>/lines', methods=['GET'])
@@ -159,7 +158,7 @@ def get_invoice_lines(invoice_num):
         lines = invoice.invoice_lines
         return jsonify([line.to_dict() for line in lines]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Update Invoice Line
 @invoice_bp.route('/invoices/<int:invoice_num>/lines/<int:line_id>', methods=['PUT'])
@@ -186,7 +185,7 @@ def update_invoice_line(invoice_num, line_id):
         return jsonify(line.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Delete Invoice Line
 @invoice_bp.route('/invoices/<int:invoice_num>/lines/<int:line_id>', methods=['DELETE'])
@@ -205,4 +204,4 @@ def delete_invoice_line(invoice_num, line_id):
         return jsonify({'message': 'Invoice line deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500

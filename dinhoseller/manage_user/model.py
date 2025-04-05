@@ -12,6 +12,7 @@ class User(db.Model):
     phone = db.Column(db.String(20), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    
     details = db.relationship("UserDetails", backref="users", uselist=False)
     stocks = db.relationship("Stock", backref="users", lazy=True)
     clients = db.relationship('Client', backref='users', lazy=True)

@@ -18,22 +18,22 @@ def create_stock():
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['code','designation', 'reference', 'category', 'quantityInStock', 'reorderThreshold', 'supplier']
+        required_fields = ['code', 'name', 'reference', 'category', 'quantity', 'minimum_stock', 'supplier']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
         
         existing_stock = Stock.query.filter(
-            (Stock.name == data.get('designation')) |
+            (Stock.name == data.get('name')) |
             (Stock.reference == data.get('reference')) |
             (Stock.code == data.get('code'))
         ).first()
 
         if existing_stock:
-             jsonify({'error': 'Un produit avec la même désignation, référence ou code existe déjà'}), 400
+            return jsonify({'error': 'Un produit avec la même désignation, référence ou code existe déjà'}), 400
         
         # Find all supplier prices for the given product
-        product_name = data.get('designation')
+        product_name = data.get('name')
         products_supplied = ProductSupplied.query.filter_by(productName=product_name).all()
 
         if not products_supplied:
@@ -42,29 +42,30 @@ def create_stock():
         # Get the highest supplier price
         highest_price = max(product.supplierPrice for product in products_supplied)
 
-        with open('dinhoseller/app_settings.json',"r", encoding="utf-8") as f:
+        with open('dinhoseller/app_settings.json', "r", encoding="utf-8") as f:
             app_settings = json.load(f)
 
         benef = app_settings.get('BENEF')
 
-        price_with_benef = highest_price + highest_price*benef
+        price_with_benef = highest_price + highest_price * benef
 
-        print(highest_price,price_with_benef)
+        print(highest_price, price_with_benef)
 
         decodeToken = get_jwt()
 
         stock = Stock(
             code=data.get('code'),
-            name=data.get('designation'),
+            name=data.get('name'),
             reference=data.get('reference'),
+            description=data.get('description'),
             category=data['category']['name'],
-            quantity=data.get('quantityInStock'),
+            quantity=data.get('quantity'),
             weight=data.get('weight'),
             brand=data.get('brand'),
-            added_date= datetime.utcnow()  ,
-            minimum_stock=data.get('reorderThreshold'),
-            supplier= data['supplier']['name'],
-            price = price_with_benef,
+            added_date=datetime.utcnow(),
+            minimum_stock=data.get('minimum_stock'),
+            supplier=data['supplier']['name'],
+            price=price_with_benef,
             user_id=int(decodeToken.get("sub"))
         )
 
@@ -75,7 +76,7 @@ def create_stock():
         return jsonify(stock.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get All Stocks
 @stock_bp.route('/all', methods=['GET'])
@@ -87,7 +88,7 @@ def get_stocks():
             return jsonify({'message': 'No stocks found'}), 404
         return jsonify([stock.to_dict() for stock in stocks]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get Stock by ID
 @stock_bp.route('/getProductById/<int:stock_id>', methods=['GET'])
@@ -99,7 +100,7 @@ def get_stock(stock_id):
             return jsonify({'error': 'Stock not found'}), 404
         return jsonify(stock.to_dict()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
     
 # Get all suppliers for a given product
 @stock_bp.route('/suppliers_by_product/<string:product_name>', methods=['GET'])
@@ -117,43 +118,44 @@ def get_products_supplied_by_product(product_name):
 
         return jsonify(products_list), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 
 # Update Stock
-@stock_bp.route('/stocks/<int:stock_id>', methods=['PUT'])
+@stock_bp.route('/update/<user_id>', methods=['PUT'])
 @jwt_required()
-def update_stock(stock_id):
-    try:
-        stock = Stock.query.get(stock_id)
-        if not stock:
-            return jsonify({'error': 'Stock not found'}), 404
-        
+def update_stock(user_id):
+    # try:
         data = request.json
+        print(data)
+        
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
+ 
+        stock = Stock.query.get(user_id)
+        if not stock:
+            return jsonify({'error': 'Produit introuvable'}), 404
 
-        required_fields = ['name','reference', 'category', 'price', 'quantity', 'added_date', 'minimum_stock', 'supplier']
+        required_fields = ['name','reference', 'category', 'price', 'quantity', 'minimum_stock', 'supplier']
         missing_fields = [field for field in required_fields if field not in data and getattr(stock, field, None) is None]
         if missing_fields:
-            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+            return jsonify({'error': f'Missing required fields'}), 400
 
-        stock.name = data.get('name', stock.name)
-        stock.description = data.get('description', stock.description)
-        stock.category = data.get('category', stock.category)
-        stock.price = data.get('price', stock.price)
-        stock.quantity = data.get('quantity', stock.quantity)
-        stock.weight = data.get('weight', stock.weight)
-        stock.brand = data.get('brand', stock.brand)
-        stock.added_date = data.get('added_date', stock.added_date)
-        stock.minimum_stock = data.get('minimum_stock', stock.minimum_stock)
-        stock.supplier = data.get('supplier', stock.supplier)
+        stock.name = data["name"]
+        stock.code = data["code"]
+        stock.category = data["category"]["name"]
+        stock.reference = data["reference"]
+        stock.quantity = data["quantity"]
+        stock.weight = data["weight"]
+        stock.brand = data["brand"]
+        stock.minimum_stock = data["minimum_stock"]
+        stock.supplier = data["supplier"]["supplierName"]
 
         db.session.commit()
         return jsonify(stock.to_dict()), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Delete Stock
 @stock_bp.route('/delete/<int:stock_id>', methods=['DELETE'])
@@ -169,7 +171,7 @@ def delete_stock(stock_id):
         return jsonify({'message': 'Stock deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
     
 
 # Create Stock Migration
@@ -197,7 +199,7 @@ def create_stock_migration():
         return jsonify(stock_migration.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get All Stock Migrations
 @stock_bp.route('/stock_migrations', methods=['GET'])
@@ -209,7 +211,7 @@ def get_stock_migrations():
             return jsonify({'message': 'No stock migrations found'}), 404
         return jsonify([migration.to_dict() for migration in stock_migrations]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get Stock Migration by ID
 @stock_bp.route('/stock_migrations/<int:migration_id>', methods=['GET'])
@@ -221,7 +223,7 @@ def get_stock_migration(migration_id):
             return jsonify({'error': 'Stock migration not found'}), 404
         return jsonify(stock_migration.to_dict()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Update Stock Migration
 @stock_bp.route('/stock_migrations/<int:migration_id>', methods=['PUT'])
@@ -244,7 +246,7 @@ def update_stock_migration(migration_id):
         return jsonify(stock_migration.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Delete Stock Migration
 @stock_bp.route('/stock_migrations/<int:migration_id>', methods=['DELETE'])
@@ -260,4 +262,4 @@ def delete_stock_migration(migration_id):
         return jsonify({'message': 'Stock migration deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500

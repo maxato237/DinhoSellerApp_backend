@@ -1,9 +1,12 @@
+from datetime import datetime
 import os
 import re
 from flask import Blueprint, json, request, jsonify
+from flask_jwt_extended import jwt_required
 from dinhoseller import db
 from dinhoseller.manage_user.model import User, UserDetails
 from werkzeug.security import generate_password_hash
+from dateutil.parser import isoparse
 
 user_bp = Blueprint('user_bp', __name__)
 
@@ -52,10 +55,75 @@ def create_user():
         return jsonify(user.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
+
+@jwt_required()
+@user_bp.route('/addemployee', methods=['POST'])
+def add_employee():
+    try:
+        data = request.get_json()
+
+        # Vérification des champs obligatoires
+        required_fields = ["lastname", "firstname", "phone", "role_id"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Le champ {field} est requis"}), 400
+
+        # Vérifier si l'utilisateur existe déjà avec le même téléphone ou e-mails
+        existing_user = User.query.filter(User.phone == data.get('phone')).first()
+        existing_details = UserDetails.query.filter(
+            (UserDetails.personnal_mail_address == data.get('personnal_mail_address')) |
+            (UserDetails.address_mail == data.get('address_mail'))
+        ).first()
+
+        if existing_user:
+            return jsonify({"error": "Un utilisateur avec ce numéro de téléphone existe déjà"}), 400
+        if existing_details:
+            return jsonify({"error": "Un utilisateur avec cette adresse e-mail existe déjà"}), 400
+
+        # Hachage du mot de passe
+        hashed_password = generate_password_hash("Drinh0access#", method='pbkdf2:sha256', salt_length=8)
+
+        # Création de l'utilisateur
+        new_user = User(
+            lastname=data["lastname"],
+            firstname=data["firstname"],
+            phone=data["phone"],
+            password=hashed_password,
+            role_id=data["role_id"]['code']
+        )
+        db.session.add(new_user)
+        db.session.flush()
+     
+        new_user_details = UserDetails(
+            user_id=new_user.id,
+            date_of_birth = isoparse(data["date_of_birth"]) if "date_of_birth" in data and data["date_of_birth"] else None,
+            genre = data["genre"]["name"] if "genre" in data and isinstance(data["genre"], dict) else None,
+            address = data.get("address"),
+            country = data["country"]["name"] if "country" in data and isinstance(data["country"], dict) else None,
+            city = data.get("city"),
+            personnal_mail_address = data.get("personnal_mail_address"),
+            address_mail = data.get("address_mail"),
+            poste = data.get("poste"),
+            start_date_of_hire = isoparse(data["start_date_of_hire"]) if "start_date_of_hire" in data and data["start_date_of_hire"] else None,
+            contract_type = data["contract_type"]["name"] if "contract_type" in data and isinstance(data["contract_type"], dict) else None,
+            salary = data.get("salary"),
+            department = data["department"]["name"] if "department" in data and isinstance(data["department"], dict) else None,
+        )
+        db.session.add(new_user_details)
+
+        # Commit final
+        db.session.commit()
+
+        return jsonify({"message": "Employé enregistré avec succès"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Erreur inatendu'}), 500
+
 
 # Get All Users
-@user_bp.route('/users', methods=['GET'])
+@user_bp.route('/all', methods=['GET'])
 def get_users():
     try:
         users = User.query.all()
@@ -63,7 +131,7 @@ def get_users():
             return jsonify({'message': 'No users found'}), 404
         return jsonify([user.to_dict() for user in users]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get User by ID
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
@@ -74,7 +142,7 @@ def get_user(user_id):
             return jsonify({'error': 'User not found'}), 404
         return jsonify(user.to_dict()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Update User
 @user_bp.route('/users/<int:user_id>', methods=['PUT'])
@@ -102,7 +170,7 @@ def update_user(user_id):
         return jsonify(user.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu lors de la mise à jour'}), 500
 
 # Delete User
 @user_bp.route('/users/<int:user_id>', methods=['DELETE'])
@@ -117,7 +185,7 @@ def delete_user(user_id):
         return jsonify({'message': 'User deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 
 @user_bp.route('/userdetails', methods=['POST'])
@@ -153,7 +221,7 @@ def create_user_details():
         return jsonify(user_details.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get UserDetails by User ID
 @user_bp.route('/userdetails/<int:user_id>', methods=['GET'])
@@ -164,7 +232,7 @@ def get_user_details(user_id):
             return jsonify({'error': 'User details not found'}), 404
         return jsonify(user_details.to_dict()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Update UserDetails
 @user_bp.route('/userdetails/<int:user_id>', methods=['PUT'])
@@ -196,7 +264,7 @@ def update_user_details(user_id):
         return jsonify(user_details.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Delete UserDetails
 @user_bp.route('/userdetails/<int:user_id>', methods=['DELETE'])
@@ -211,4 +279,4 @@ def delete_user_details(user_id):
         return jsonify({'message': 'User details deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500

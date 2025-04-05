@@ -28,7 +28,7 @@ def create_charge():
         return jsonify(charge.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get All Charges
 @charge_bp.route('/charges', methods=['GET'])
@@ -39,7 +39,7 @@ def get_charges():
             return jsonify({'message': 'No charges found'}), 404
         return jsonify([charge.to_dict() for charge in charges]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get Charge by ID
 @charge_bp.route('/charges/<int:charge_id>', methods=['GET'])
@@ -50,7 +50,7 @@ def get_charge(charge_id):
             return jsonify({'error': 'Charge not found'}), 404
         return jsonify(charge.to_dict()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Update Charge
 @charge_bp.route('/charges/<int:charge_id>', methods=['PUT'])
@@ -77,7 +77,7 @@ def update_charge(charge_id):
         return jsonify(charge.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Delete Charge
 @charge_bp.route('/charges/<int:charge_id>', methods=['DELETE'])
@@ -92,4 +92,4 @@ def delete_charge(charge_id):
         return jsonify({'message': 'Charge deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500

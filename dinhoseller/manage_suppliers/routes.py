@@ -98,6 +98,7 @@ def generate_suppliers():
 
     db.session.commit()
     return jsonify({"message": "40 suppliers and products generated successfully!"})
+
 @supplier_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_supplier():
@@ -199,7 +200,7 @@ def get_suppliers():
             return jsonify({'error': 'Aucun fournisseur trouvé'}), 404
         return jsonify([supplier.to_dict() for supplier in suppliers]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get all products supplied by a given supplier
 @supplier_bp.route('/products_supplied/<string:supplier_name>', methods=['GET'])
@@ -217,7 +218,7 @@ def get_products_supplied_by_supplier(supplier_name):
 
         return jsonify(products_list), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get Supplier by ID
 @supplier_bp.route('/getSupplierById/<int:supplier_id>', methods=['GET'])
@@ -228,12 +229,12 @@ def get_supplier(supplier_id):
             return jsonify({'error': 'Fournisseur introuvable'}), 404
         return jsonify(supplier.to_dict()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Update Supplier
-@supplier_bp.route('/update', methods=['PUT'])
+@supplier_bp.route('/update/<int:supplier_id>', methods=['PUT'])
 @jwt_required()
-def update_supplier():
+def update_supplier(supplier_id):
     # try:
         data = request.json
 
@@ -245,13 +246,13 @@ def update_supplier():
         if not name or not status or not phone or not preferredPaymentMethod:
             return jsonify({'error': 'Champs requis manquants'}), 400
         
-        supplier = Supplier.query.get(data.get('id'))
+        supplier = Supplier.query.get(supplier_id)
         if not supplier:
             return jsonify({'error': 'Fournisseur introuvable'}), 404
 
         # Mise à jour des informations du fournisseur
         supplier.name = name
-        supplier.status = status
+        supplier.status = status['name']
         supplier.address = data.get('address')
         supplier.city = data.get('city')
         supplier.postal_code = data.get('postal_code')
@@ -259,7 +260,7 @@ def update_supplier():
         supplier.phone = phone
         supplier.email = data.get('email')
         supplier.website = data.get('website')
-        supplier.preferred_payment_method = preferredPaymentMethod
+        supplier.preferred_payment_method = preferredPaymentMethod['name']
         supplier.addedAt = datetime.utcnow()  
 
         # Récupérer les produits fournis envoyés dans la demande
@@ -293,7 +294,7 @@ def update_supplier():
         return jsonify(supplier.to_dict()), 200
     # except Exception as e:
     #     db.session.rollback()
-    #     return jsonify({'error': str(e)}), 500
+    #     return jsonify({'error': 'Erreur dans la mise à jour'}), 500
 
 # Delete Supplier
 @supplier_bp.route('/delete/<int:supplier_id>', methods=['DELETE'])
@@ -313,4 +314,4 @@ def delete_supplier(supplier_id):
         return jsonify({'message': 'Suppression reussite'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur inatendu'}), 500

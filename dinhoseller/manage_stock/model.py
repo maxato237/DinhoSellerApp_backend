@@ -5,7 +5,7 @@ class Stock(db.Model):
     __tablename__ = 'stocks'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255), unique=True)
+    name = db.Column(db.String(255), unique=True, nullable=False)
     reference = db.Column(db.String(255), unique=True)
     code = db.Column(db.String(255), unique=True)
     description = db.Column(db.String(255), nullable=True)
