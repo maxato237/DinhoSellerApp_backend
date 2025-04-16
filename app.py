@@ -22,5 +22,5 @@ def is_super_admin_configured():
         return jsonify({'error': 'Error decoding JSON'}), 500
 
 
-app.run(host='0.0.0.0',debug=True,port=5000)
+app.run(host='0.0.0.0',port=5000)
 
