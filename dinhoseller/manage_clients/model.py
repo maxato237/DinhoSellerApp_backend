@@ -5,7 +5,6 @@ class Client(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)  
     name = db.Column(db.String(255), nullable=False)
-    group = db.Column(db.Integer)
     principal_address = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
     phone = db.Column(db.String(20), nullable=False, unique=True)  
@@ -30,7 +29,6 @@ class Client(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "group": self.group,
             "principal_address": self.principal_address,
             "email": self.email,
             "phone": self.phone,
@@ -41,5 +39,7 @@ class Client(db.Model):
             "notes": self.notes,
             "representant": self.representant,
             "assujetti_tva": self.assujetti_tva,
-            "concern_ecomp": self.concern_ecomp
+            "concern_ecomp": self.concern_ecomp,
+            "user_id": self.user_id,
+            "invoices": [invoice.to_dict() for invoice in self.invoices] if self.invoices else None
         }

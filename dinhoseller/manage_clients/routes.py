@@ -11,7 +11,7 @@ def create_client():
     try:
         data = request.json
         if not data:
-            return jsonify({'error': 'No input data provided'}), 400
+            return jsonify({'error': 'Aucune information fournis'}), 400
 
         required_fields = ['name', 'phone', 'payment_method']
         missing_fields = [field for field in required_fields if field not in data]
@@ -39,8 +39,8 @@ def create_client():
             payment_method=data['payment_method']['name'],
             notes=data.get('notes'),
             representant=data['representant']['id'],
-            assujetti_tva=data.get('assujetti_tva', False),
-            concern_ecomp=data.get('concern_ecomp', False),
+            assujetti_tva=data.get('tva'),
+            concern_ecomp=data.get('ecomp'),
             user_id=int(decodeToken.get("sub"))
         )
 
@@ -56,7 +56,7 @@ def get_clients():
     try:
         clients = Client.query.all()
         if not clients:
-            return jsonify({'error': 'No clients found'}), 404
+            return jsonify({'error': 'Aucun client trouvé'}), 404
         return jsonify([client.to_dict() for client in clients]), 200
     except Exception as e:
         return jsonify({'error': 'Erreur inatendu'}), 500
@@ -66,14 +66,14 @@ def get_client(client_id):
     try:
         client = Client.query.get(client_id)
         if not client:
-            return jsonify({'error': 'Client not found'}), 404
+            return jsonify({'error': 'Client introuvable'}), 404
         return jsonify(client.to_dict()), 200
     except Exception as e:
         return jsonify({'error': 'Erreur inatendu'}), 500
 
 @client_bp.route('/update/<int:client_id>', methods=['PUT'])
 def update_client(client_id):
-    # try:
+    try:
         client = Client.query.get(client_id)
         if not client:
             return jsonify({'error': 'Client not found'}), 404
@@ -102,9 +102,9 @@ def update_client(client_id):
 
         db.session.commit()
         return jsonify(client.to_dict()), 200
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': 'Erreur inatendu lors de la mise à jour'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Erreur inatendu lors de la mise à jour'}), 500
 
 @client_bp.route('/delete/<int:client_id>', methods=['DELETE'])
 def delete_client(client_id):

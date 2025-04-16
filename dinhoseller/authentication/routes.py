@@ -19,56 +19,55 @@ auth = Blueprint('auth', __name__)
 
 @auth.route('/login', methods=['POST'])
 def login():
-    # try:
+    try:
         data = request.form
 
-        # Vérification de la présence du nom d'utilisateur et du mot de passe
-        phone = data['phone']
-        password = data['password']
-        rememberme = data['rememberme']
-
-        print("ici c'est rememberme :", rememberme)
+        # Vérification de la présence du téléphone et du mot de passe
+        phone = data.get('phone')
+        password = data.get('password')
+        rememberme = data.get('rememberme')
 
         if not phone or not password:
-            return jsonify({'message' :'Veillez bien saisir les données '})
+            return jsonify({'message': 'Veuillez bien saisir les données.'}), 400
 
-        # Vérification si l'utilisateur existe
-        user = User.query.filter_by(phone=phone).first()
+        # Vérification si l'utilisateur existe et s'il est actif
+        user = User.query.filter_by(phone=phone, is_active=True).first()
         if not user:
-            return jsonify({'message' :'Utilisateur introuvable'}), 404
-            
+            return jsonify({'message': 'Utilisateur introuvable ou compte désactivé.'}), 404
 
         # Vérification du mot de passe
         if not check_password_hash(user.password, password):
-            return jsonify({'message' :'Utilisateur introuvable'}),400
+            return jsonify({'message': 'Mot de passe incorrect.'}), 400
 
-    
-        if(rememberme == "true"):
+        # Gérer le type de token en fonction du choix de l'utilisateur
+        if rememberme == "true":
             token = month_refresh_token(user.id, user.role_id, user.firstname)
-            print(rememberme)
         else:
             token = generate_token(user.id, user.role_id, user.firstname)
 
+        # Gestion de la session utilisateur
         user_agent = request.user_agent.string
-        usersession = Session.query.filter_by(user_id = user.id, user_agent = user_agent ).first()
-        if(usersession):
+        usersession = Session.query.filter_by(user_id=user.id, user_agent=user_agent).first()
+        
+        if usersession:
             usersession.token = token
             db.session.add(usersession)
-            db.session.commit()
         else:
             new_session = Session(
-                user_id = user.id,
-                token = token,
-                ip_address = request.remote_addr,
-                user_agent = user_agent,
+                user_id=user.id,
+                token=token,
+                ip_address=request.remote_addr,
+                user_agent=user_agent,
             )
-
             db.session.add(new_session)
-            db.session.commit()
+        
+        # Commit de la session et du token
+        db.session.commit()
 
         return jsonify({'token': token}), 200
-    # except Exception as e:
-    #     return jsonify({'message': 'An error occurred.', 'error': str(e)}), 500
+
+    except Exception as e:
+        return jsonify({'message': 'Une erreur est survenue.', 'error': str(e)}), 500
 
 @auth.route('/logout', methods=['POST'])
 def logout():

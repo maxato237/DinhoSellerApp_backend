@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt, jwt_required
 from dinhoseller import db
 from dinhoseller.manage_stock.model import Stock, StockMigration
-from dinhoseller.manage_suppliers.model import ProductSupplied
+from dinhoseller.manage_suppliers.model import ProductSupplied, Supplier
 import json
 
 
@@ -69,10 +69,14 @@ def create_stock():
             user_id=int(decodeToken.get("sub"))
         )
 
-        print(stock)
-
         db.session.add(stock)
         db.session.commit()
+
+        supplier = Supplier.query.filter_by(name=data['supplier']['name']).first()
+
+        supplier.products.append(stock)
+        db.session.commit()
+
         return jsonify(stock.to_dict()), 201
     except Exception as e:
         db.session.rollback()
@@ -85,7 +89,7 @@ def get_stocks():
     try:
         stocks = Stock.query.all()
         if not stocks:
-            return jsonify({'message': 'No stocks found'}), 404
+            return jsonify({'error': 'Aucun produit trouvé'}), 404
         return jsonify([stock.to_dict() for stock in stocks]), 200
     except Exception as e:
         return jsonify({'error': 'Erreur inatendu'}), 500
@@ -125,7 +129,7 @@ def get_products_supplied_by_product(product_name):
 @stock_bp.route('/update/<user_id>', methods=['PUT'])
 @jwt_required()
 def update_stock(user_id):
-    # try:
+    try:
         data = request.json
         print(data)
         
@@ -153,9 +157,9 @@ def update_stock(user_id):
 
         db.session.commit()
         return jsonify(stock.to_dict()), 200
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': 'Erreur inatendu'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Delete Stock
 @stock_bp.route('/delete/<int:stock_id>', methods=['DELETE'])

@@ -2,8 +2,9 @@ from datetime import datetime
 import os
 import re
 from flask import Blueprint, json, request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt, jwt_required
 from dinhoseller import db
+from dinhoseller.manage_session.model import Session
 from dinhoseller.manage_user.model import User, UserDetails
 from werkzeug.security import generate_password_hash
 from dateutil.parser import isoparse
@@ -38,6 +39,25 @@ def create_user():
         )
         
         db.session.add(user)
+        db.session.flush()
+
+        new_user_details = UserDetails(
+            user_id=user.id,
+            date_of_birth=None,
+            genre=None,
+            address=None,
+            country=None,
+            city=None,
+            personnal_mail_address=None,
+            address_mail=None,
+            post=None,
+            start_date_of_hire=None,
+            contract_type=None,
+            salary=None,
+            department=None,
+        )
+
+        db.session.add(new_user_details)
         db.session.commit()
 
         # Vérifier si le fichier existe
@@ -104,15 +124,13 @@ def add_employee():
             city = data.get("city"),
             personnal_mail_address = data.get("personnal_mail_address"),
             address_mail = data.get("address_mail"),
-            poste = data.get("poste"),
+            post = data.get("post"),
             start_date_of_hire = isoparse(data["start_date_of_hire"]) if "start_date_of_hire" in data and data["start_date_of_hire"] else None,
             contract_type = data["contract_type"]["name"] if "contract_type" in data and isinstance(data["contract_type"], dict) else None,
             salary = data.get("salary"),
             department = data["department"]["name"] if "department" in data and isinstance(data["department"], dict) else None,
         )
         db.session.add(new_user_details)
-
-        # Commit final
         db.session.commit()
 
         return jsonify({"message": "Employé enregistré avec succès"}), 201
@@ -124,17 +142,21 @@ def add_employee():
 
 # Get All Users
 @user_bp.route('/all', methods=['GET'])
+@jwt_required()
 def get_users():
     try:
-        users = User.query.all()
+        decodeToken = get_jwt()
+        user_id = int(decodeToken.get("sub"))
+        users = User.query.filter(User.is_active == True, User.id != user_id).all()
         if not users:
-            return jsonify({'message': 'No users found'}), 404
+            return jsonify({'error': 'No users found'}), 404
         return jsonify([user.to_dict() for user in users]), 200
     except Exception as e:
-        return jsonify({'error': 'Erreur inatendu'}), 500
+        return jsonify({'error': 'Erreur inattendue'}), 500
 
 # Get User by ID
 @user_bp.route('/users/<int:user_id>', methods=['GET'])
+@jwt_required()
 def get_user(user_id):
     try:
         user = User.query.get(user_id)
@@ -144,139 +166,88 @@ def get_user(user_id):
     except Exception as e:
         return jsonify({'error': 'Erreur inatendu'}), 500
 
-# Update User
-@user_bp.route('/users/<int:user_id>', methods=['PUT'])
+@jwt_required()
+@user_bp.route('/update/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'User not found'}), 404
-        
-        data = request.json
+            return jsonify({'error': 'Employé introuvable'}), 404
+
+        data = request.get_json()
         if not data:
-            return jsonify({'error': 'No input data provided'}), 400
+            return jsonify({'error': 'Veuillez remplir les champs obligatoires'}), 400
 
         required_fields = ['lastname', 'firstname', 'phone', 'role_id']
-        missing_fields = [field for field in required_fields if field not in data and getattr(user, field, None) is None]
-        if missing_fields:
-            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Le champ {field} est requis'}), 400
 
-        user.lastname = data.get('lastname', user.lastname)
-        user.firstname = data.get('firstname', user.firstname)
-        user.phone = data.get('phone', user.phone)
-        user.role_id = data.get('role_id', user.role_id)
-        
+        # Vérification des duplications (numéro ou email déjà utilisé par un autre utilisateur)
+        existing_user = User.query.filter(User.phone == data.get('phone'), User.id != user.id).first()
+        existing_details = UserDetails.query.filter(
+            ((UserDetails.personnal_mail_address == data.get('personnal_mail_address')) |
+             (UserDetails.address_mail == data.get('address_mail'))),
+            UserDetails.user_id != user.id
+        ).first()
+        if existing_user:
+            return jsonify({"error": "Un autre utilisateur avec ce numéro de téléphone existe déjà"}), 400
+        if existing_details:
+            return jsonify({"error": "Un autre utilisateur avec cette adresse e-mail existe déjà"}), 400
+
+        # Mise à jour des infos de base
+        user.lastname = data['lastname']
+        user.firstname = data['firstname']
+        user.phone = data['phone']
+        user.role_id = data['role_id']['code'] if isinstance(data['role_id'], dict) else data['role_id']
+
+        details = UserDetails.query.filter_by(user_id=user.id).first()
+        if not details:
+            details = UserDetails(user_id=user.id)
+
+        # Mise à jour ou création des détails
+        details.date_of_birth = isoparse(data["date_of_birth"]) if "date_of_birth" in data and data["date_of_birth"] else None
+        details.genre = data["genre"]["name"] if "genre" in data and isinstance(data["genre"], dict) else None
+        details.address = data.get("address")
+        details.country = data["country"]["name"] if "country" in data and isinstance(data["country"], dict) else None
+        details.city = data.get("city")
+        details.personnal_mail_address = data.get("personnal_mail_address")
+        details.address_mail = data.get("address_mail")
+        details.post = data.get("post")
+        details.start_date_of_hire = isoparse(data["start_date_of_hire"]) if "start_date_of_hire" in data and data["start_date_of_hire"] else None
+        details.contract_type = data["contract_type"]["name"] if "contract_type" in data and isinstance(data["contract_type"], dict) else None
+        details.salary = data.get("salary")
+        details.department = data["department"]["name"] if "department" in data and isinstance(data["department"], dict) else None
+
         db.session.commit()
+
         return jsonify(user.to_dict()), 200
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu lors de la mise à jour'}), 500
+        print(f"Erreur lors de la mise à jour : {e}")
+        return jsonify({'error': 'Erreur inattendue lors de la mise à jour'}), 500
 
-# Delete User
-@user_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@user_bp.route('/delete/<int:user_id>', methods=['DELETE'])
+@jwt_required()
 def delete_user(user_id):
-    try:
+    try:  
+        # Récupérer l'utilisateur
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
         
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify({'message': 'User deleted successfully'}), 200
+        # Marquer l'utilisateur comme inactif
+        user.is_active = False
+        user.deleted_at = datetime.utcnow()
+
+        # Désactiver toutes les sessions associées à l'utilisateur
+        sessions = Session.query.filter_by(user_id=user_id).all()
+        for session in sessions:
+            session.is_active = False  # Désactiver la session
+
+        db.session.commit()  # Sauvegarder les changements
+        return jsonify({'message': 'User deleted successfully, all sessions deactivated'}), 200
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu'}), 500
-
-
-@user_bp.route('/userdetails', methods=['POST'])
-def create_user_details():
-    try:
-        data = request.json
-        if not data:
-            return jsonify({'error': 'No input data provided'}), 400
-
-        user_id = data.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'User ID is required'}), 400
-
-        user_details = UserDetails(
-            date_of_birth=data.get('date_of_birth'),
-            genre=data.get('genre'),
-            address=data.get('address'),
-            country=data.get('country'),
-            city=data.get('city'),
-            personnal_mail_address=data.get('personnal_mail_address'),
-            address_mail=data.get('address_mail'),
-            poste=data.get('poste'),
-            start_date_of_hire=data.get('start_date_of_hire'),
-            contract_type=data.get('contract_type'),
-            salary=data.get('salary'),
-            group=data.get('group'),
-            department=data.get('department'),
-            user_id=user_id
-        )
-        
-        db.session.add(user_details)
-        db.session.commit()
-        return jsonify(user_details.to_dict()), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu'}), 500
-
-# Get UserDetails by User ID
-@user_bp.route('/userdetails/<int:user_id>', methods=['GET'])
-def get_user_details(user_id):
-    try:
-        user_details = UserDetails.query.filter_by(user_id=user_id).first()
-        if not user_details:
-            return jsonify({'error': 'User details not found'}), 404
-        return jsonify(user_details.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': 'Erreur inatendu'}), 500
-
-# Update UserDetails
-@user_bp.route('/userdetails/<int:user_id>', methods=['PUT'])
-def update_user_details(user_id):
-    try:
-        user_details = UserDetails.query.filter_by(user_id=user_id).first()
-        if not user_details:
-            return jsonify({'error': 'User details not found'}), 404
-        
-        data = request.json
-        if not data:
-            return jsonify({'error': 'No input data provided'}), 400
-
-        user_details.date_of_birth = data.get('date_of_birth', user_details.date_of_birth)
-        user_details.genre = data.get('genre', user_details.genre)
-        user_details.address = data.get('address', user_details.address)
-        user_details.country = data.get('country', user_details.country)
-        user_details.city = data.get('city', user_details.city)
-        user_details.personnal_mail_address = data.get('personnal_mail_address', user_details.personnal_mail_address)
-        user_details.address_mail = data.get('address_mail', user_details.address_mail)
-        user_details.poste = data.get('poste', user_details.poste)
-        user_details.start_date_of_hire = data.get('start_date_of_hire', user_details.start_date_of_hire)
-        user_details.contract_type = data.get('contract_type', user_details.contract_type)
-        user_details.salary = data.get('salary', user_details.salary)
-        user_details.group = data.get('group', user_details.group)
-        user_details.department = data.get('department', user_details.department)
-        
-        db.session.commit()
-        return jsonify(user_details.to_dict()), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu'}), 500
-
-# Delete UserDetails
-@user_bp.route('/userdetails/<int:user_id>', methods=['DELETE'])
-def delete_user_details(user_id):
-    try:
-        user_details = UserDetails.query.filter_by(user_id=user_id).first()
-        if not user_details:
-            return jsonify({'error': 'User details not found'}), 404
-        
-        db.session.delete(user_details)
-        db.session.commit()
-        return jsonify({'message': 'User details deleted successfully'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu'}), 500
+        db.session.rollback()  # Annuler la transaction en cas d'erreur
+        return jsonify({'error': 'Erreur inattendue', 'details': str(e)}), 500

@@ -44,7 +44,8 @@ class Supplier(db.Model):
             'website': self.website,
             'preferredPaymentMethod': self.preferredPaymentMethod,
             'addedAt': self.addedAt.strftime('%Y-%m-%d') if self.addedAt else None,
-            'user_id' : self.user_id
+            'user_id' : self.user_id,
+            'products': [product.to_dict() for product in self.products] if self.products else None
         }
     
 

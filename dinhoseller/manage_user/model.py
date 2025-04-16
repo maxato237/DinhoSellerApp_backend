@@ -12,8 +12,10 @@ class User(db.Model):
     phone = db.Column(db.String(20), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    deleted_at = db.Column(db.DateTime, nullable=True)
     
-    details = db.relationship("UserDetails", backref="users", uselist=False)
+    details = db.relationship("UserDetails", backref="users", uselist=False, cascade='all, delete-orphan')
     stocks = db.relationship("Stock", backref="users", lazy=True)
     clients = db.relationship('Client', backref='users', lazy=True)
     invoices = db.relationship('Invoice', backref='users', lazy=True)
@@ -29,7 +31,15 @@ class User(db.Model):
             'firstname': self.firstname,
             'phone': self.phone,
             'role_id': self.role_id,
-            'password': self.password
+            'password': self.password,
+            'details': self.details.to_dict() if self.details else None,
+            'stocks': [stock.to_dict() for stock in self.stocks] if self.stocks else None,
+            'clients' : [client.to_dict() for client in self.clients] if self.clients else None,
+            'invoices' : [invoice.to_dict() for invoice in self.invoices] if self.invoices else None,
+            'suppliers' : [supplier.to_dict() for supplier in self.suppliers] if self.suppliers else None,
+            'notifications' : [notification.to_dict() for notification in self.notifications] if self.notifications else None,
+            'stock_migrations' : [stock_migration.to_dict() for stock_migration in self.stock_migrations] if self.stock_migrations else None,
+            'sessions' : [session.to_dict() for session in self.sessions] if self.sessions else None
         }
     
 
@@ -44,11 +54,28 @@ class UserDetails(db.Model):
     city = db.Column(db.String(100), nullable=True)
     personnal_mail_address = db.Column(db.String(150), unique=True, nullable=True)
     address_mail = db.Column(db.String(150), unique=True, nullable=True)
-    poste = db.Column(db.String(100), nullable=True)
+    post = db.Column(db.String(100), nullable=True)
     start_date_of_hire = db.Column(db.Date, nullable=True)
     contract_type = db.Column(db.String(50), nullable=True)
     salary = db.Column(db.Float, nullable=True)
     group = db.Column(db.String(100), nullable=True)
     department = db.Column(db.String(100), nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id',ondelete='CASCADE'), nullable=False)
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'date_of_birth': self.date_of_birth,
+            'genre': self.genre,
+            'address': self.address,
+            'country': self.country,
+            'city': self.city,
+            'personnal_mail_address': self.personnal_mail_address,
+            'address_mail': self.address_mail,
+            'post': self.post,
+            'start_date_of_hire': self.start_date_of_hire,
+            'contract_type': self.contract_type,
+            'salary': self.salary,
+            'group': self.group,
+            'department': self.department
+        }

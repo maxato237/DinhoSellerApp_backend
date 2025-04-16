@@ -46,7 +46,10 @@ class Stock(db.Model):
             'brand': self.brand,
             'addedDate': self.added_date.strftime('%Y-%m-%d') if self.added_date else None,
             'minimumStock': self.minimum_stock,
-            'suppliers': self.suppliers
+            'expirationDate': self.expiration_date.strftime('%Y-%m-%d') if self.expiration_date else None,
+            'user_id': self.user_id,
+            'stock_migration_id': self.stock_migration_id,
+            'invoices': [invoice.to_dict() for invoice in self.invoices] if self.invoices else None
         }
 
 class StockMigration(db.Model):
@@ -60,5 +63,18 @@ class StockMigration(db.Model):
 
     stock = db.relationship("Stock", backref=db.backref("stock_migration", uselist=False))
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type_migration': self.type_migration,
+            'user_id': self.user_id,
+            'date_migration': self.date_migration.strftime('%Y-%m-%d %H:%M:%S') if self.date_migration else None,
+            'quantite': self.quantite,
+            'stock_id': self.stock.id if self.stock else None
+        }
+
     def __repr__(self):
         return f"<StockMigration {self.id} de {self.quantite} pour l'article {self.article_id}>"
+    
+   
+

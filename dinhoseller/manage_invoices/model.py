@@ -13,8 +13,8 @@ invoice_products = db.Table(
 class Invoice(db.Model):
     __tablename__ = 'invoices'
     
-    num = db.Column(db.Integer, primary_key=True) 
-    code_facture = db.Column(db.String(20), unique=True, nullable=False)  # Code facture ajouté
+    num = db.Column(db.Integer, primary_key=True, autoincrement=True) 
+    code_facture = db.Column(db.String(20), unique=True, nullable=False)
     type = db.Column(db.String(100), nullable=False)  
     status = db.Column(db.String(50), nullable=False)  
     TVA = db.Column(db.Float, nullable=True)  
@@ -67,7 +67,9 @@ class Invoice(db.Model):
             "echeance": self.echeance.strftime("%Y-%m-%d") if self.echeance else None,
             "dateAdded": self.dateAdded.strftime("%Y-%m-%d %H:%M:%S"),
             "client_id": self.client_id,
-            "user_id": self.user_id
+            "user_id": self.user_id,
+            "invoice_lines": [line.to_dict() for line in self.invoice_lines] if self.invoice_lines else None,
+            "products": [product.to_dict() for product in self.products] if self.products else None
         }
 
 
@@ -96,5 +98,6 @@ class Invoice_line(db.Model):
             'designation': self.designation,
             'PUH': self.PUH,
             'PTH': self.PTH,
-            'PVC': self.PVC
+            'PVC': self.PVC,
+            'invoice_id': self.invoice_id
         }

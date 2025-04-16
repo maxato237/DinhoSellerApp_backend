@@ -11,184 +11,97 @@ from collections import defaultdict
 faker = Faker()
 supplier_bp = Blueprint('supplier_bp', __name__)
 
-
-
-@supplier_bp.route('/generate_suppliers', methods=['POST'])
-def generate_suppliers():
-    supplier_names = [
-        "OSERVICES INTERNATIONAL", "HORIZON COMMODITIES", "ETS NSANGOU", "L2D TRADING INTERNATIONAL",
-        "CENTRALE AGRO-ALIMENTAIRE DU CAMEROUN", "SOCIÉTÉ DE PRODUCTION ET DE DISTRIBUTION", 
-        "NETS HOLDING", "ETABLISSEMENT SYSY", "SOCIÉTÉ SUCRIÈRE DU CAMEROUN", 
-        "LES BRASSERIES DU CAMEROUN", "CHOCOLATERIE DU CAMEROUN (CHOCOCAM)", "SOCIÉTÉ CAMEROUNAISE DE SUCRERIE (SOCAS)", 
-        "SOCIÉTÉ DE PRODUCTION DE CÉRÉALES (SPC)", "SOCIÉTÉ INDUSTRIELLE DE CACAO (SIC-CACAOS)", 
-        "SOCIÉTÉ ANONYME DES BOISSONS DU CAMEROUN (SABC)", "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DES MÉTAUX (SCTM)", 
-        "SOCIÉTÉ AFRICAINE DE RAFFINAGE (SAR)", "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DE BOIS (SCTB)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DU RIZ (SCTR)", "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DU SUCRE (SCTS)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DU CAFÉ (SCTC)", "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DES CÉRÉALES (SCTC)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSPORT ET SERVICES (SCTS)", "SOCIÉTÉ CAMEROUNAISE DE TRANSPORT ET SERVICES LOGISTIQUES (SCTL)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DU PÉTROLE (SCTP)", "SOCIÉTÉ CAMEROUNAISE DE GESTION DES TRANSPORTS (SCTG)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DES GRAINES OLEAGINEUSES (SCTO)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSPORTS TERRESTRES (SCTT)", "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION LAITIÈRE (SCTL)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DES MÉTAUX (SCTM)", "SOCIÉTÉ CAMEROUNAISE DE TRANSPORT ROUTIER (SCTR)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DU SOJA (SCTS)", "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DES PRODUITS AGRICOLES (SCTP)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DES CÉRÉALES (SCTC)", "SOCIÉTÉ CAMEROUNAISE DE TRANSPORT ET LOGISTIQUE (SCTL)", 
-        "SOCIÉTÉ CAMEROUNAISE DE TRANSFORMATION DU CACAO (SCTC)"
-    ]
-
-    payment_methods = ['Orange Money', 'MTN Money', 'Virement', 'Espèce', 'Chèque']
-    statuses = ['Active', 'Inactive', 'Pending']
-    products = [
-        "Riz blanc", "Pâtes alimentaires", "Lentilles sèches", "Haricots secs", "Pois chiches", 
-        "Farine de blé", "Sucre en poudre", "Sel de table", "Huile végétale", "Concentré de tomate", 
-        "Maïs en conserve", "Petits pois en conserve", "Sardines à l'huile", "Thon en conserve", 
-        "Lait en poudre", "Café soluble", "Thé en sachets", "Chocolat en poudre", "Biscuits secs", 
-        "Miel", "Confiture", "Céréales pour petit-déjeuner", "Pain de mie", "Craquelins", 
-        "Noix de cajou", "Amandes", "Raisins secs", "Dattes séchées", "Fruits confits", "Soupes en sachet", 
-        "Bouillon en cubes", "Purée de pommes de terre", "Sauce soja", "Vinaigre blanc", "Moutarde", 
-        "Ketchup", "Mayonnaise", "Cornichons en bocal", "Olives vertes en bocal", "Poivre noir moulu", 
-        "Paprika en poudre", "Cannelle en poudre", "Curcuma en poudre", "Origan séché", "Basilic séché", 
-        "Lait concentré sucré", "Crème de marrons", "Beurre de cacahuète", "Sirop d'érable", "Levure chimique"
-    ]
-
-    suppliers = []
-    used_names = set()  
-
-    # Utilisation d'un dictionnaire pour stocker les prix des produits sans gestion des doublons
-    product_price_map = {}
-
-    for _ in range(30):
-        name = random.choice(supplier_names)
-        while name in used_names:
-            name = random.choice(supplier_names)
-        used_names.add(name)
-
-        supplier = Supplier(
-            name=name,
-            status=random.choice(statuses),
-            address=faker.address(),
-            city=faker.city(),
-            postalCode=faker.zipcode(),
-            country=faker.country(),
-            phone=faker.unique.phone_number(),
-            email=faker.unique.email(),
-            website=faker.unique.url(),
-            preferredPaymentMethod=random.choice(payment_methods),
-            addedAt=date.today(),
-            user_id=1
-        )
-        db.session.add(supplier)
-        suppliers.append(supplier)
-
-        # Enregistrement des produits fournis par chaque fournisseur
-        for product in products:
-            price = round(random.uniform(1000, 4000), 2)  # Prix flottant entre 1000 et 4000
-
-            # Ajout du prix à la liste associée au produit
-            if product not in product_price_map:
-                product_price_map[product] = []
-            product_price_map[product].append(price)
-
-            product_supplied = ProductSupplied(
-                supplierName=name,
-                productName=product,
-                supplierPrice=price
-            )
-
-            db.session.add(product_supplied)
-
-    db.session.commit()
-    return jsonify({"message": "40 suppliers and products generated successfully!"})
-
 @supplier_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_supplier():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    # Vérification des champs requis
-    name = data.get('name')
-    status = data.get('status')
-    phone = data.get('phone')
-    preferredPaymentMethod = data.get('preferredPaymentMethod')
+        # Vérification des champs requis
+        name = data.get('name')
+        status = data.get('status')
+        phone = data.get('phone')
+        preferredPaymentMethod = data.get('preferredPaymentMethod')
 
-    if not name or not status or not phone or not preferredPaymentMethod:
-        return jsonify({'error': 'Champs requis manquants'}), 400
+        if not name or not status or not phone or not preferredPaymentMethod:
+            return jsonify({'error': 'Champs requis manquants'}), 400
 
-    # Vérifier si un fournisseur avec les mêmes valeurs uniques existe déjà
-    existing_supplier = Supplier.query.filter(
-        (Supplier.name == name) |
-        (Supplier.phone == phone) |
-        (Supplier.email == data.get('email')) |
-        (Supplier.website == data.get('website'))
-    ).first()
+        # Vérifier si un fournisseur avec les mêmes valeurs uniques existe déjà
+        existing_supplier = Supplier.query.filter(
+            (Supplier.name == name) |
+            (Supplier.phone == phone) |
+            (Supplier.email == data.get('email')) |
+            (Supplier.website == data.get('website'))
+        ).first()
 
-    if existing_supplier:
-        message = "Ce fournisseur existe déjà"
-        return jsonify({'error': message}), 400
+        if existing_supplier:
+            message = "Ce fournisseur existe déjà"
+            return jsonify({'error': message}), 400
 
-    decodeToken = get_jwt()
+        decodeToken = get_jwt()
 
-    # Récupérer les autres champs du JSON
-    address = data.get('address')
-    city = data.get('city')
-    postalCode = data.get('postalCode')
-    country = data.get('country')
-    email = data.get('email')
-    website = data.get('website')
+        # Récupérer les autres champs du JSON
+        address = data.get('address') if 'address' in data else None
+        city = data.get('city') if 'city' in data else None
+        postalCode = data.get('postalCode') if 'postalCode' in data else None
+        country = data['country']['name'] if 'country' in data else None
+        email = data.get('email')
+        website = data.get('website')
 
-    # Convertir productsSupplied de string à JSON si nécessaire
-    products_supplied = data.get('productsSupplied')
-    if products_supplied:
-        try:
-            # Si productsSupplied est déjà un tableau, pas besoin de json.loads
-            if isinstance(products_supplied, str):
-                products_supplied = json.loads(products_supplied)
-        except Exception as e:
-            return jsonify({'error': f"Données 'productsSupplied' invalides"}), 400
+        # Convertir productsSupplied de string à JSON si nécessaire
+        products_supplied = data.get('productsSupplied')
+        if products_supplied:
+            try:
+                # Si productsSupplied est déjà un tableau, pas besoin de json.loads
+                if isinstance(products_supplied, str):
+                    products_supplied = json.loads(products_supplied)
+            except Exception as e:
+                return jsonify({'error': f"Données 'productsSupplied' invalides"}), 400
 
-    # Créer le fournisseur
-    supplier = Supplier(
-        name=name,
-        status=status,
-        phone=phone,
-        preferredPaymentMethod=preferredPaymentMethod,
-        address=address,
-        city=city,
-        postalCode=postalCode,
-        country=country,
-        email=email,
-        website=website,
-        addedAt=datetime.utcnow(),
-        user_id=int(decodeToken.get("sub"))
-    )
-
-    # Enregistrer le fournisseur
-    # try:
-    db.session.add(supplier)
-    db.session.commit()
-
-    # Enregistrer les produits fournis dans ProductSupplied
-    for product in products_supplied:
-        supplierName = supplier.name
-        productName = product.get('productName')
-        supplierPrice = product.get('price')
-
-        # Vérifier si les informations de produit sont valides
-        if not productName or not supplierPrice:
-            continue  # Skip invalid product data
-
-        # Créer un enregistrement pour chaque produit fourni
-        product_supplied = ProductSupplied(
-            supplierName=supplierName,
-            productName=productName,
-            supplierPrice=supplierPrice
+        # Créer le fournisseur
+        supplier = Supplier(
+            name=name,
+            status=status,
+            phone=phone,
+            preferredPaymentMethod=preferredPaymentMethod,
+            address=address,
+            city=city,
+            postalCode=postalCode,
+            country=country,
+            email=email,
+            website=website,
+            addedAt=datetime.utcnow(),
+            user_id=int(decodeToken.get("sub"))
         )
-        db.session.add(product_supplied)
 
-    db.session.commit()
-    return jsonify(supplier.to_dict()), 201
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': f"Erreur lors de l'ajout du fournisseur : {str(e)}"}), 500
+        # Enregistrer le fournisseur
+        # try:
+        db.session.add(supplier)
+        db.session.commit()
+
+        # Enregistrer les produits fournis dans ProductSupplied
+        for product in products_supplied:
+            supplierName = supplier.name
+            productName = product.get('productName')
+            supplierPrice = product.get('price')
+
+            # Vérifier si les informations de produit sont valides
+            if not productName or not supplierPrice:
+                continue  # Skip invalid product data
+
+            # Créer un enregistrement pour chaque produit fourni
+            product_supplied = ProductSupplied(
+                supplierName=supplierName,
+                productName=productName,
+                supplierPrice=supplierPrice
+            )
+            db.session.add(product_supplied)
+
+        db.session.commit()
+        return jsonify(supplier.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f"Erreur lors de l'ajout du fournisseur : {str(e)}"}), 500
 
 # Get All Suppliers
 @supplier_bp.route('/all', methods=['GET'])
@@ -235,7 +148,7 @@ def get_supplier(supplier_id):
 @supplier_bp.route('/update/<int:supplier_id>', methods=['PUT'])
 @jwt_required()
 def update_supplier(supplier_id):
-    # try:
+    try:
         data = request.json
 
         name = data.get('name')
@@ -256,7 +169,7 @@ def update_supplier(supplier_id):
         supplier.address = data.get('address')
         supplier.city = data.get('city')
         supplier.postal_code = data.get('postal_code')
-        supplier.country = data.get('country')
+        supplier.country = data['country']['name'] if 'country' in data else None
         supplier.phone = phone
         supplier.email = data.get('email')
         supplier.website = data.get('website')
@@ -292,9 +205,9 @@ def update_supplier(supplier_id):
         db.session.commit()
 
         return jsonify(supplier.to_dict()), 200
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': 'Erreur dans la mise à jour'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Erreur dans la mise à jour'}), 500
 
 # Delete Supplier
 @supplier_bp.route('/delete/<int:supplier_id>', methods=['DELETE'])

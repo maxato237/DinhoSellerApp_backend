@@ -37,6 +37,7 @@ def create_invoice():
 
         db.session.add(invoice)
         db.session.commit()
+
         return jsonify(invoice.to_dict()), 201
     except Exception as e:
         db.session.rollback()
@@ -142,6 +143,10 @@ def create_invoice_line(invoice_num):
 
         db.session.add(invoice_line)
         db.session.commit()
+
+        invoice.invoice_lines.append(invoice_line)
+        db.session.commit()
+        
         return jsonify(invoice_line.to_dict()), 201
     except Exception as e:
         db.session.rollback()
