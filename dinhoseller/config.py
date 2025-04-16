@@ -1,10 +1,10 @@
 import os
 
 DISTANT_DB_CONNEXION = {
-    'host': 'bllkz2rubsr6lxqhlttx-mysql.services.clever-cloud.com',
-    'user': 'usbqefhqtsll6nh6',
-    'password': 'AbOmXp99etO4zgXBZxH9',
-    'database': 'bllkz2rubsr6lxqhlttx',
+    'host': 'localhost',
+    'user': 'root',
+    'password': '12Monkeys#',
+    'database': 'dinhosellerbd',
     'port': '3306'
 }
 
