@@ -2,7 +2,7 @@ import os
 
 DISTANT_DB_CONNEXION = {
     'host': 'localhost',
-    'user': 'root',
+    'user': 'maxime',
     'password': '12Monkeys#',
     'database': 'dinhosellerbd',
     'port': '3306'
