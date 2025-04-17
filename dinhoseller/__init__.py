@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask,json, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
@@ -28,7 +28,11 @@ def insert_initial_data():
         db.session.commit()
 
 def create_app(config_class=None):
+
+
     app = Flask(__name__)
+
+
     CORS(app, supports_credentials=True)
 
         # Charge la configuration fournie, sinon utilise la configuration par défaut
@@ -58,6 +62,23 @@ def create_app(config_class=None):
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         return jsonify({'error': 'Votre session a expiré. Veuillez vous reconnecter.'}), 401
+    
+    @app.route('/api/')
+    def root():
+        return jsonify({'message': 'good job'})
+    
+    @app.route('/api/isSuperAdminConfigured')
+    def is_super_admin_configured():
+        try:
+            with open('dinhoseller/app_settings.json', 'r') as file:
+                settings = json.load(file)
+                return jsonify({
+                    'isSuperAdminConfigured': settings.get('isSuperAdminConfigured', False)
+                })
+        except FileNotFoundError:
+            return jsonify({'error': 'app_settings.json not found'}), 404
+        except json.JSONDecodeError:
+            return jsonify({'error': 'Error decoding JSON'}), 500
 
     with app.app_context():
         from dinhoseller.authentication.routes import auth
