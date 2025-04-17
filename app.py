@@ -5,11 +5,11 @@ from dinhoseller import create_app
 app = create_app()
 
 
-@app.route('/', methods=['GET'])
+@app.route('/api/', methods=['GET'])
 def root():
     return jsonify({"message": "good job"})
 
-@app.route('/isSuperAdminConfigured', methods=['GET'])
+@app.route('/api/isSuperAdminConfigured', methods=['GET'])
 def is_super_admin_configured():
     try:
         with open('dinhoseller/app_settings.json', 'r') as file:
