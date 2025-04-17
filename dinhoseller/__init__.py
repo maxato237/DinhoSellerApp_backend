@@ -70,15 +70,15 @@ def create_app(config_class=None):
         from dinhoseller.manage_notication.routes import notication_bp
         from dinhoseller.manage_session.routes import session_bp    
 
-        app.register_blueprint(auth, url_prefix='/auth')
-        app.register_blueprint(client_bp, url_prefix='/clients')
-        app.register_blueprint(invoice_bp, url_prefix='/invoices')
-        app.register_blueprint(stock_bp, url_prefix='/stocks')
-        app.register_blueprint(supplier_bp, url_prefix='/suppliers')
-        app.register_blueprint(user_bp, url_prefix='/users')
-        app.register_blueprint(charge_bp, url_prefix='/charges')
-        app.register_blueprint(notication_bp, url_prefix='/notifications')
-        app.register_blueprint(session_bp, url_prefix='/sessions')
+        app.register_blueprint(auth, url_prefix='/api/auth')
+        app.register_blueprint(client_bp, url_prefix='/api/clients')
+        app.register_blueprint(invoice_bp, url_prefix='/api/invoices')
+        app.register_blueprint(stock_bp, url_prefix='/api/stocks')
+        app.register_blueprint(supplier_bp, url_prefix='/api/suppliers')
+        app.register_blueprint(user_bp, url_prefix='/api/users')
+        app.register_blueprint(charge_bp, url_prefix='/api/charges')
+        app.register_blueprint(notication_bp, url_prefix='/api/notifications')
+        app.register_blueprint(session_bp, url_prefix='/api/sessions')
 
         db.create_all()
         insert_initial_data()
