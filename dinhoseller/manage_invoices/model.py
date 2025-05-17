@@ -37,9 +37,6 @@ class Invoice(db.Model):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.code_facture = self.generate_invoice_code()
-
-    def generer_num(self, numero_facture):
-        return f"{self.date_ajout.year}{self.date_ajout.month:02d}-FAC-{numero_facture}"
     
     def generate_invoice_code(self):
         date_facture = self.dateAdded or datetime.utcnow()
@@ -79,6 +76,7 @@ class Invoice_line(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     designation = db.Column(db.String(255), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
     PUH = db.Column(db.Float, nullable=False)
     PTH = db.Column(db.Float, nullable=False)
     PVC = db.Column(db.Float, nullable=False)
@@ -96,6 +94,7 @@ class Invoice_line(db.Model):
         return {
             'id': self.id,
             'designation': self.designation,
+            'quantity': self.quantity,
             'PUH': self.PUH,
             'PTH': self.PTH,
             'PVC': self.PVC,

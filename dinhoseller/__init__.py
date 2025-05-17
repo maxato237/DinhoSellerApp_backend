@@ -40,11 +40,11 @@ def create_app(config_class=None):
         app.config.from_object(config_class)
     else:
         # Utilisation de la configuration définie dans le fichier de config
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.DISTANT_DB_CONNEXION['user']}:" \
-                                                f"{config.DISTANT_DB_CONNEXION['password']}@" \
-                                                f"{config.DISTANT_DB_CONNEXION['host']}:" \
-                                                f"{config.DISTANT_DB_CONNEXION['port']}/" \
-                                                f"{config.DISTANT_DB_CONNEXION['database']}"
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.SQL_CONNEXION['user']}:" \
+                                                f"{config.SQL_CONNEXION['password']}@" \
+                                                f"{config.SQL_CONNEXION['host']}:" \
+                                                f"{config.SQL_CONNEXION['port']}/" \
+                                                f"{config.SQL_CONNEXION['database']}"
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config.from_object(config)
 
@@ -66,19 +66,6 @@ def create_app(config_class=None):
     @app.route('/api/')
     def root():
         return jsonify({'message': 'good job'})
-    
-    @app.route('/api/isSuperAdminConfigured')
-    def is_super_admin_configured():
-        try:
-            with open('dinhoseller/app_settings.json', 'r') as file:
-                settings = json.load(file)
-                return jsonify({
-                    'isSuperAdminConfigured': settings.get('isSuperAdminConfigured', False)
-                })
-        except FileNotFoundError:
-            return jsonify({'error': 'app_settings.json not found'}), 404
-        except json.JSONDecodeError:
-            return jsonify({'error': 'Error decoding JSON'}), 500
 
     with app.app_context():
         from dinhoseller.authentication.routes import auth

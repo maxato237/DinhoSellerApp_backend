@@ -17,7 +17,7 @@ class Stock(db.Model):
     added_date = db.Column(db.Date, nullable=False)
     expiration_date = db.Column(db.Date)
     minimum_stock = db.Column(db.Integer, nullable=False)
-    supplier = db.Column(db.String(255), nullable=False)
+    supplierlist = db.Column(db.String(255), nullable=False)
 
     stock_migration_id = db.Column(db.Integer, db.ForeignKey('stock_migration.id'), unique=True)
         
@@ -26,7 +26,7 @@ class Stock(db.Model):
 
 
     # Clé étrangère pour l'utilisateur propriétaire du stock
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     
     def __repr__(self):
         return f"<Stock {self.id} (TYPE: {self.name})>"
@@ -41,7 +41,7 @@ class Stock(db.Model):
             'category': self.category,
             'price': self.price,
             'quantity': self.quantity,
-            'supplier': self.supplier,
+            'supplierlist': self.supplierlist,
             'weight': self.weight,
             'brand': self.brand,
             'addedDate': self.added_date.strftime('%Y-%m-%d') if self.added_date else None,

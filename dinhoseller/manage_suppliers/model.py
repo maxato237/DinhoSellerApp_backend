@@ -22,7 +22,7 @@ class Supplier(db.Model):
     preferredPaymentMethod = db.Column(db.String(100), nullable=False)
     addedAt = db.Column(db.Date, nullable=False)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
 
     # Relation plusieurs à plusieurs avec Product via la table d'association supplier_products
     products = db.relationship('Stock', secondary='supplier_products', backref='suppliers', lazy='dynamic')

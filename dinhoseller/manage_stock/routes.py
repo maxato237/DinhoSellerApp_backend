@@ -15,10 +15,11 @@ stock_bp = Blueprint('stock_bp', __name__)
 def create_stock():
     try:
         data = request.json
+        
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
 
-        required_fields = ['code', 'name', 'reference', 'category', 'quantity', 'minimum_stock', 'supplier']
+        required_fields = ['code', 'name', 'reference', 'category', 'quantity', 'minimum_stock', 'suppliers']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
@@ -64,7 +65,7 @@ def create_stock():
             brand=data.get('brand'),
             added_date=datetime.utcnow(),
             minimum_stock=data.get('minimum_stock'),
-            supplier=data['supplier']['name'],
+            supplierlist=str(data['suppliers']),
             price=price_with_benef,
             user_id=int(decodeToken.get("sub"))
         )
@@ -72,10 +73,10 @@ def create_stock():
         db.session.add(stock)
         db.session.commit()
 
-        supplier = Supplier.query.filter_by(name=data['supplier']['name']).first()
-
-        supplier.products.append(stock)
-        db.session.commit()
+        for supplier_data in data['suppliers']:
+            supplier = Supplier.query.filter_by(name=supplier_data['supplierName']).first()
+            supplier.products.append(stock)
+            db.session.commit()
 
         return jsonify(stock.to_dict()), 201
     except Exception as e:
@@ -111,16 +112,13 @@ def get_stock(stock_id):
 @jwt_required()
 def get_products_supplied_by_product(product_name):
     try:
-        # Récupérer tous les fournisseurs pour le produit spécifié
         products_supplied = ProductSupplied.query.filter_by(productName=product_name).all()
-
         if not products_supplied:
-            return jsonify({'message': 'Aucun fournisseur trouvé pour ce produit'}), 404
+            return jsonify({'error': 'Aucun fournisseur trouvé pour ce produit'}), 404
+        
+        suppliers_list = [supplier.to_dict() for supplier in products_supplied]
 
-        # Retourner les produits fournis sous forme de dictionnaire
-        products_list = [product.to_dict() for product in products_supplied]
-
-        return jsonify(products_list), 200
+        return jsonify(suppliers_list), 200
     except Exception as e:
         return jsonify({'error': 'Erreur inatendu'}), 500
 
@@ -131,7 +129,6 @@ def get_products_supplied_by_product(product_name):
 def update_stock(user_id):
     try:
         data = request.json
-        print(data)
         
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
@@ -140,7 +137,7 @@ def update_stock(user_id):
         if not stock:
             return jsonify({'error': 'Produit introuvable'}), 404
 
-        required_fields = ['name','reference', 'category', 'price', 'quantity', 'minimum_stock', 'supplier']
+        required_fields = ['name','reference', 'category', 'price', 'quantity', 'minimum_stock', 'suppliers']
         missing_fields = [field for field in required_fields if field not in data and getattr(stock, field, None) is None]
         if missing_fields:
             return jsonify({'error': f'Missing required fields'}), 400
@@ -153,7 +150,7 @@ def update_stock(user_id):
         stock.weight = data["weight"]
         stock.brand = data["brand"]
         stock.minimum_stock = data["minimum_stock"]
-        stock.supplier = data["supplier"]["supplierName"]
+        stock.supplierlist = str(data["suppliers"]),
 
         db.session.commit()
         return jsonify(stock.to_dict()), 200

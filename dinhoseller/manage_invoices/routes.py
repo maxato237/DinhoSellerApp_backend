@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required
 from dinhoseller import db
 from dinhoseller.manage_invoices.model import Invoice, Invoice_line
 
@@ -7,6 +8,7 @@ invoice_bp = Blueprint('invoice_bp', __name__)
 
 # Create Invoice
 @invoice_bp.route('/add', methods=['POST'])
+@jwt_required()
 def create_invoice():
     try:
         data = request.json
@@ -43,9 +45,35 @@ def create_invoice():
         db.session.rollback()
         return jsonify({'error': 'Erreur inatendu'}), 500
 
+@invoice_bp.route('/code', methods=['GET'])
+@jwt_required()
+def get_invoice_code():
+    try:
+        date_facture = datetime.utcnow()
+        prefix = f"{date_facture.year}{date_facture.month:02d}FAC"
+        
+        dernier = (
+            Invoice.query
+            .filter(Invoice.code_facture.startswith(prefix))
+            .order_by(Invoice.num.desc())
+            .first()
+        )
+
+        if not dernier:
+            numero_facture = 1
+        else:
+            numero_facture = int(dernier.code_facture.split("-")[-1]) + 1
+
+        print(f"{prefix}{numero_facture}")
+
+        return jsonify({'message': f"{prefix}{numero_facture}"}), 200
+    except Exception as e:
+        return jsonify({'error': 'Erreur inattendue'}), 500
+
 
 # Get All Invoices
 @invoice_bp.route('/invoices', methods=['GET'])
+@jwt_required()
 def get_invoices():
     try:
         invoices = Invoice.query.all()
@@ -68,6 +96,7 @@ def get_invoice(invoice_num):
 
 # Update Invoice
 @invoice_bp.route('/invoices/<int:invoice_num>', methods=['PUT'])
+@jwt_required()
 def update_invoice(invoice_num):
     try:
         invoice = Invoice.query.get(invoice_num)
@@ -102,6 +131,7 @@ def update_invoice(invoice_num):
 
 # Delete Invoice
 @invoice_bp.route('/invoices/<int:invoice_num>', methods=['DELETE'])
+@jwt_required()
 def delete_invoice(invoice_num):
     try:
         invoice = Invoice.query.get(invoice_num)
@@ -118,6 +148,7 @@ def delete_invoice(invoice_num):
 
 # Create Invoice Line
 @invoice_bp.route('/invoices/<int:invoice_num>/lines', methods=['POST'])
+@jwt_required()
 def create_invoice_line(invoice_num):
     try:
         invoice = Invoice.query.get(invoice_num)
@@ -154,6 +185,7 @@ def create_invoice_line(invoice_num):
 
 # Get All Lines for a Specific Invoice
 @invoice_bp.route('/invoices/<int:invoice_num>/lines', methods=['GET'])
+@jwt_required()
 def get_invoice_lines(invoice_num):
     try:
         invoice = Invoice.query.get(invoice_num)
@@ -167,6 +199,7 @@ def get_invoice_lines(invoice_num):
 
 # Update Invoice Line
 @invoice_bp.route('/invoices/<int:invoice_num>/lines/<int:line_id>', methods=['PUT'])
+@jwt_required()
 def update_invoice_line(invoice_num, line_id):
     try:
         invoice = Invoice.query.get(invoice_num)
@@ -194,6 +227,7 @@ def update_invoice_line(invoice_num, line_id):
 
 # Delete Invoice Line
 @invoice_bp.route('/invoices/<int:invoice_num>/lines/<int:line_id>', methods=['DELETE'])
+@jwt_required()
 def delete_invoice_line(invoice_num, line_id):
     try:
         invoice = Invoice.query.get(invoice_num)

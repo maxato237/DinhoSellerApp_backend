@@ -17,7 +17,7 @@ class Client(db.Model):
     assujetti_tva = db.Column(db.Boolean, default = False)
     concern_ecomp = db.Column(db.Boolean, default = False)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
 
     invoices = db.relationship("Invoice", backref="clients", lazy=True)
 

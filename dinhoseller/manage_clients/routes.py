@@ -52,6 +52,7 @@ def create_client():
         return jsonify({'error': 'Erreur inatendu'}), 500
         
 @client_bp.route('/all', methods=['GET'])
+@jwt_required()
 def get_clients():
     try:
         clients = Client.query.all()
@@ -62,6 +63,7 @@ def get_clients():
         return jsonify({'error': 'Erreur inatendu'}), 500
 
 @client_bp.route('/getById/<int:client_id>', methods=['GET'])
+@jwt_required()
 def get_client(client_id):
     try:
         client = Client.query.get(client_id)
@@ -72,6 +74,7 @@ def get_client(client_id):
         return jsonify({'error': 'Erreur inatendu'}), 500
 
 @client_bp.route('/update/<int:client_id>', methods=['PUT'])
+@jwt_required()
 def update_client(client_id):
     try:
         client = Client.query.get(client_id)
@@ -107,6 +110,7 @@ def update_client(client_id):
         return jsonify({'error': 'Erreur inatendu lors de la mise à jour'}), 500
 
 @client_bp.route('/delete/<int:client_id>', methods=['DELETE'])
+@jwt_required()
 def delete_client(client_id):
     try:
         client = Client.query.get(client_id)

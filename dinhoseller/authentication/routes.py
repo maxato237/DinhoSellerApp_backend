@@ -121,7 +121,7 @@ def generate_token(id,role_id,firstname):
         "firstname": firstname,
         "sub": str(id)
     }
-    token = create_access_token(identity=str(id), expires_delta=timedelta(hours=24), additional_claims=claims)
+    token = create_access_token(identity=str(id), expires_delta=timedelta(days=30), additional_claims=claims)
     return token
 
 def generate_random_string():

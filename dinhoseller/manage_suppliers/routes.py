@@ -158,12 +158,12 @@ def update_supplier(supplier_id):
 
         if not name or not status or not phone or not preferredPaymentMethod:
             return jsonify({'error': 'Champs requis manquants'}), 400
-        
+
         supplier = Supplier.query.get(supplier_id)
         if not supplier:
             return jsonify({'error': 'Fournisseur introuvable'}), 404
 
-        # Mise à jour des informations du fournisseur
+        # Mise à jour des infos fournisseur
         supplier.name = name
         supplier.status = status['name']
         supplier.address = data.get('address')
@@ -174,39 +174,48 @@ def update_supplier(supplier_id):
         supplier.email = data.get('email')
         supplier.website = data.get('website')
         supplier.preferred_payment_method = preferredPaymentMethod['name']
-        supplier.addedAt = datetime.utcnow()  
+        supplier.addedAt = datetime.utcnow()
 
-        # Récupérer les produits fournis envoyés dans la demande
-        products_supplied = data.get('productsSupplied')
+        # Traitement des produits fournis
+        new_products = data.get('productsSupplied', [])
 
-        if products_supplied:
+        # Récupérer tous les produits actuels de ce fournisseur
+        existing_products = ProductSupplied.query.filter_by(supplierName=supplier.name).all()
+        existing_products_dict = {p.productName: p for p in existing_products}
 
-            # Ajouter les nouveaux produits fournis
-            for product in products_supplied:
-                productName = product.get('productName')
-                supplierPrice = product.get('price')
+        # Récupérer les noms des nouveaux produits
+        new_product_names = set()
+        for product in new_products:
+            product_name = product.get('productName')
+            supplier_price = product.get('price')
 
-                existing_product_supplied = ProductSupplied.query.filter_by(productName=productName, supplierName=supplier.name).first()
-                if existing_product_supplied:
-                    continue
+            new_product_names.add(product_name)
 
-                # Ajouter l'enregistrement dans ProductSupplied
-                product_supplied = ProductSupplied(
+            if product_name in existing_products_dict:
+                # Mise à jour du prix
+                existing_products_dict[product_name].supplierPrice = supplier_price
+            else:
+                # Ajout d'un nouveau produit
+                new_product = ProductSupplied(
                     supplierName=supplier.name,
-                    productName=productName,
-                    supplierPrice=supplierPrice
+                    productName=product_name,
+                    supplierPrice=supplier_price
                 )
-                db.session.add(product_supplied)
+                db.session.add(new_product)
 
-            # Commit des changements
-            db.session.commit()
+        # Supprimer les produits qui ne sont plus dans la liste
+        for product_name, product_obj in existing_products_dict.items():
+            if product_name not in new_product_names:
+                db.session.delete(product_obj)
 
-        # Commit des changements du fournisseur
+        # Commit global
         db.session.commit()
 
         return jsonify(supplier.to_dict()), 200
+
     except Exception as e:
         db.session.rollback()
+        print(str(e))
         return jsonify({'error': 'Erreur dans la mise à jour'}), 500
 
 # Delete Supplier

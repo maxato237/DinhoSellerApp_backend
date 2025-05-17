@@ -60,18 +60,6 @@ def create_user():
         db.session.add(new_user_details)
         db.session.commit()
 
-        # Vérifier si le fichier existe
-        if os.path.exists('dinhoseller/app_settings.json'):
-            with open('dinhoseller/app_settings.json', "r", encoding="utf-8") as file:
-                settings = json.load(file)
-
-            # Modifier la valeur de isSuperAdminConfigured
-            settings["isSuperAdminConfigured"] = True
-
-            # Écrire les modifications dans le fichier
-            with open('dinhoseller/app_settings.json', "w", encoding="utf-8") as file:
-                json.dump(settings, file, indent=4)
-
         return jsonify(user.to_dict()), 201
     except Exception as e:
         db.session.rollback()
@@ -149,7 +137,7 @@ def get_users():
         user_id = int(decodeToken.get("sub"))
         users = User.query.filter(User.is_active == True, User.id != user_id).all()
         if not users:
-            return jsonify({'error': 'No users found'}), 404
+            return jsonify({'error': 'Aucun employés trouvés'}), 404
         return jsonify([user.to_dict() for user in users]), 200
     except Exception as e:
         return jsonify({'error': 'Erreur inattendue'}), 500
