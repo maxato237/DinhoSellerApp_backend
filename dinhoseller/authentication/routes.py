@@ -1,9 +1,11 @@
 # from datetime import datetime, timedelta
 from datetime import datetime, timedelta
+import json
+import os
 import random
 import string
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required
 import jwt
 
 from dinhoseller.config import Config
@@ -73,6 +75,32 @@ def login():
 def logout():
     # implémentation la logique de déconnexion, comme la suppression de la session utilisateur
     return jsonify({'message': 'Logout successful.'}), 200
+
+
+SETTINGS_FILE = "dinhoseller\\application.settings\\application.setting.json"
+
+# Lire les paramètres
+@auth.route('/all', methods=['GET'])
+def get_settings():
+    with open(SETTINGS_FILE, 'r') as f:
+        data = json.load(f)
+    return jsonify(data), 200
+
+# Modifier un ou plusieurs paramètres
+@auth.route('/update', methods=['PUT'])
+def update_settings():
+    updates = request.json
+    with open(SETTINGS_FILE, 'r') as f:
+        settings = json.load(f)
+
+    settings.update(updates)
+
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f, indent=2)
+
+    return jsonify({"message": "Settings updated", "settings": settings}), 200
+
+
 
 # @auth.route('/resetpassword/<phone>', methods=['GET'])
 # def resetpassword(phone):

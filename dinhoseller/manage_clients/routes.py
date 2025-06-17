@@ -8,18 +8,19 @@ client_bp = Blueprint('client_bp', __name__)
 @client_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_client():
-    try:
+    # try:
         data = request.json
         if not data:
             return jsonify({'error': 'Aucune information fournis'}), 400
 
-        required_fields = ['name', 'phone', 'payment_method']
+        required_fields = ['nc','name', 'phone', 'payment_method']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
         
         existing_client = Client.query.filter(
             (Client.phone == data.get('phone')) |
+            (Client.nc == data.get('nc')) |
             (Client.email == data.get('email'))
         ).first()
 
@@ -29,27 +30,29 @@ def create_client():
         decodeToken = get_jwt()
 
         client = Client(
+            nc =data.get('nc'),
             name=data.get('name'),
             principal_address=data.get('principal_address'),
             facturation_address=data.get('facturation_address'),
             email=data.get('email'),
             phone=data.get('phone'),
-            specific_price= float(data.get('specific_price'))/100,
+            specific_price= float(data.get('specific_price'))/100 if data.get('specific_price') else 0.0,
             payment_requirement=data['payment_requirement']['name'],
             payment_method=data['payment_method']['name'],
             notes=data.get('notes'),
             representant=data['representant']['id'],
             assujetti_tva=data.get('tva'),
-            concern_ecomp=data.get('ecomp'),
+            concern_ecomp=data.get('ecomp',False),
+            concern_precompte=data.get('precompte',False),
             user_id=int(decodeToken.get("sub"))
         )
 
         db.session.add(client)
         db.session.commit()
         return jsonify(client.to_dict()), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu'}), 500
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'error': 'Erreur inatendu'}), 500
         
 @client_bp.route('/all', methods=['GET'])
 @jwt_required()
@@ -90,6 +93,7 @@ def update_client(client_id):
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
+        client.nc=data.get('nc'),
         client.name = data.get('name')
         client.principal_address = data.get('principal_address')
         client.facturation_address = data.get('facturation_address')
@@ -102,6 +106,7 @@ def update_client(client_id):
         client.representant = data['representant']['id']
         client.assujetti_tva = data.get('tva', False) 
         client.concern_ecomp = data.get('ecomp', False)
+        client.concern_precompte = data.get('precompte', False)
 
         db.session.commit()
         return jsonify(client.to_dict()), 200

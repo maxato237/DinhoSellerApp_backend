@@ -65,6 +65,99 @@ def create_user():
         db.session.rollback()
         return jsonify({'error': 'Erreur inatendu'}), 500
 
+
+@user_bp.route('/addemployeesbyarray', methods=['POST'])
+def add_employees_by_array():
+    try:
+        employees = request.get_json()
+        
+        if not isinstance(employees, list):
+            return jsonify({"error": "Le format des données doit être un tableau d'employés"}), 400
+
+        results = []
+        for index, data in enumerate(employees):
+            try:
+                # Vérification des champs obligatoires
+                required_fields = ["lastname", "firstname", "phone", "role_id"]
+                for field in required_fields:
+                    if field not in data:
+                        raise ValueError(f"Le champ {field} est requis")
+
+                # Vérifier si l'utilisateur existe déjà
+                existing_user = User.query.filter(User.phone == data.get('phone')).first()
+                existing_details = UserDetails.query.filter(
+                    (UserDetails.personnal_mail_address == data.get('personnal_mail_address')) |
+                    (UserDetails.address_mail == data.get('address_mail'))
+                ).first()
+
+                if existing_user:
+                    raise ValueError("Un utilisateur avec ce numéro de téléphone existe déjà")
+                if existing_details:
+                    raise ValueError("Un utilisateur avec cette adresse e-mail existe déjà")
+
+                # Hachage du mot de passe (mot de passe par défaut)
+                hashed_password = generate_password_hash("Drinh0access#", method='pbkdf2:sha256', salt_length=8)
+
+                # Création de l'utilisateur
+                new_user = User(
+                    lastname=data["lastname"],
+                    firstname=data["firstname"],
+                    phone=data["phone"],
+                    password=hashed_password,
+                    role_id=data["role_id"]['code']
+                )
+                db.session.add(new_user)
+                db.session.flush()
+
+                # Détails utilisateur
+                new_user_details = UserDetails(
+                    user_id=new_user.id,
+                    date_of_birth=isoparse(data["date_of_birth"]) if data.get("date_of_birth") else None,
+                    genre=data["genre"]["name"] if isinstance(data.get("genre"), dict) else None,
+                    address=data.get("address"),
+                    country=data["country"]["name"] if isinstance(data.get("country"), dict) else None,
+                    city=data.get("city"),
+                    personnal_mail_address=data.get("personnal_mail_address"),
+                    address_mail=data.get("address_mail"),
+                    post=data.get("post"),
+                    start_date_of_hire=isoparse(data["start_date_of_hire"]) if data.get("start_date_of_hire") else None,
+                    contract_type=data["contract_type"]["name"] if isinstance(data.get("contract_type"), dict) else None,
+                    salary=data.get("salary"),
+                    department=data["department"]["name"] if isinstance(data.get("department"), dict) else None,
+                )
+                db.session.add(new_user_details)
+
+                results.append({
+                    "index": index,
+                    "phone": data["phone"],
+                    "status": "success"
+                })
+
+            except ValueError as ve:
+                results.append({
+                    "index": index,
+                    "phone": data.get("phone"),
+                    "status": "error",
+                    "message": str(ve)
+                })
+            except Exception as e:
+                results.append({
+                    "index": index,
+                    "phone": data.get("phone"),
+                    "status": "error",
+                    "message": "Erreur interne lors de l'ajout de cet employé"
+                })
+
+        db.session.commit()
+        return jsonify({"message": "Traitement terminé", "results": results}), 207  # 207 = Multi-Status
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Erreur inattendue'}), 500
+
+
+
+
 @jwt_required()
 @user_bp.route('/addemployee', methods=['POST'])
 def add_employee():
@@ -85,9 +178,9 @@ def add_employee():
         ).first()
 
         if existing_user:
-            return jsonify({"error": "Un utilisateur avec ce numéro de téléphone existe déjà"}), 400
+            return jsonify({"error": "Un utilisateur avec ce numéro de téléphone existe déjà"}), 409
         if existing_details:
-            return jsonify({"error": "Un utilisateur avec cette adresse e-mail existe déjà"}), 400
+            return jsonify({"error": "Un utilisateur avec cette adresse e-mail existe déjà"}), 409
 
         # Hachage du mot de passe
         hashed_password = generate_password_hash("Drinh0access#", method='pbkdf2:sha256', salt_length=8)

@@ -10,6 +10,7 @@ class Supplier(db.Model):
     __tablename__ = 'suppliers'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nc = db.Column(db.String(255),unique=True)
     name = db.Column(db.String(255), nullable=False,unique=True)
     status = db.Column(db.String(100), nullable=False)
     address = db.Column(db.String(255))
@@ -28,12 +29,13 @@ class Supplier(db.Model):
     products = db.relationship('Stock', secondary='supplier_products', backref='suppliers', lazy='dynamic')
 
     def __repr__(self):
-        return f"<Supplier {self.name} (ID: {self.id})>"
+        return f"<NC : {self.nc} (ID: {self.id})>"
 
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
+            'nc': self.nc,
             'status': self.status,
             'address': self.address,
             'city': self.city,

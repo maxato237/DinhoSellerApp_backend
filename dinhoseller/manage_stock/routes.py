@@ -9,6 +9,11 @@ import json
 
 stock_bp = Blueprint('stock_bp', __name__)
 
+# @stock_bp.route('/add', methods=['POST'])
+# def add_all_product():
+
+
+
 # Create Stock
 @stock_bp.route('/add', methods=['POST'])
 @jwt_required()
@@ -31,10 +36,10 @@ def create_stock():
         ).first()
 
         if existing_stock:
-            return jsonify({'error': 'Un produit avec la même désignation, référence ou code existe déjà'}), 400
+            return jsonify({'error': 'Ce produit existe déjà'}), 400
         
         # Find all supplier prices for the given product
-        product_name = data.get('name')
+        product_name = data.get('name').strip()
         products_supplied = ProductSupplied.query.filter_by(productName=product_name).all()
 
         if not products_supplied:
@@ -43,20 +48,18 @@ def create_stock():
         # Get the highest supplier price
         highest_price = max(product.supplierPrice for product in products_supplied)
 
-        with open('dinhoseller/app_settings.json', "r", encoding="utf-8") as f:
+        with open('dinhoseller\\application.settings\\application.setting.json', "r", encoding="utf-8") as f:
             app_settings = json.load(f)
 
         benef = app_settings.get('BENEF')
 
         price_with_benef = highest_price + highest_price * benef
 
-        print(highest_price, price_with_benef)
-
         decodeToken = get_jwt()
 
         stock = Stock(
             code=data.get('code'),
-            name=data.get('name'),
+            name=data.get('name').strip(),
             reference=data.get('reference'),
             description=data.get('description'),
             category=data['category']['name'],
@@ -112,7 +115,7 @@ def get_stock(stock_id):
 @jwt_required()
 def get_products_supplied_by_product(product_name):
     try:
-        products_supplied = ProductSupplied.query.filter_by(productName=product_name).all()
+        products_supplied = ProductSupplied.query.filter_by(productName=product_name.strip()).all()
         if not products_supplied:
             return jsonify({'error': 'Aucun fournisseur trouvé pour ce produit'}), 404
         

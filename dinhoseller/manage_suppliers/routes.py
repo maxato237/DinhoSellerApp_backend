@@ -4,6 +4,7 @@ from faker import Faker
 from flask import Blueprint, json, request, jsonify
 from flask_jwt_extended import get_jwt, jwt_required
 from dinhoseller import db
+from dinhoseller.manage_stock.model import Stock
 from dinhoseller.manage_suppliers.model import ProductSupplied, Supplier
 import random
 from collections import defaultdict
@@ -14,11 +15,12 @@ supplier_bp = Blueprint('supplier_bp', __name__)
 @supplier_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_supplier():
-    try:
+    # try:
         data = request.get_json()
 
         # Vérification des champs requis
         name = data.get('name')
+        nc = data.get('nc')
         status = data.get('status')
         phone = data.get('phone')
         preferredPaymentMethod = data.get('preferredPaymentMethod')
@@ -29,6 +31,7 @@ def create_supplier():
         # Vérifier si un fournisseur avec les mêmes valeurs uniques existe déjà
         existing_supplier = Supplier.query.filter(
             (Supplier.name == name) |
+            (Supplier.nc == nc) |
             (Supplier.phone == phone) |
             (Supplier.email == data.get('email')) |
             (Supplier.website == data.get('website'))
@@ -36,7 +39,7 @@ def create_supplier():
 
         if existing_supplier:
             message = "Ce fournisseur existe déjà"
-            return jsonify({'error': message}), 400
+            return jsonify({'error': message}), 409
 
         decodeToken = get_jwt()
 
@@ -60,6 +63,7 @@ def create_supplier():
 
         # Créer le fournisseur
         supplier = Supplier(
+            nc=nc,
             name=name,
             status=status,
             phone=phone,
@@ -75,33 +79,41 @@ def create_supplier():
         )
 
         # Enregistrer le fournisseur
-        # try:
         db.session.add(supplier)
-        db.session.commit()
+        db.session.flush()
 
         # Enregistrer les produits fournis dans ProductSupplied
         for product in products_supplied:
             supplierName = supplier.name
             productName = product.get('productName')
+            existingProduct = Stock.query.filter(name == productName).first()
+            
+            if(existingProduct):
+                with open('dinhoseller\\application.settings\\application.setting.json', "r", encoding="utf-8") as f:
+                    app_settings = json.load(f)
+                
+                if(product.price >= (existingProduct.price - existingProduct.price*app_settings.get('BENEF'))):
+                    existingProduct.price = product.price + product.price*app_settings.get('BENEF')
             supplierPrice = product.get('price')
 
             # Vérifier si les informations de produit sont valides
             if not productName or not supplierPrice:
-                continue  # Skip invalid product data
+                continue  
 
             # Créer un enregistrement pour chaque produit fourni
             product_supplied = ProductSupplied(
                 supplierName=supplierName,
-                productName=productName,
+                productName=productName.strip(),
                 supplierPrice=supplierPrice
             )
             db.session.add(product_supplied)
 
         db.session.commit()
+        print('le fournisseur :', supplier)
         return jsonify(supplier.to_dict()), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f"Erreur lors de l'ajout du fournisseur : {str(e)}"}), 500
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'error': f"Erreur lors de l'ajout du fournisseur : {str(e)}"}), 500
 
 # Get All Suppliers
 @supplier_bp.route('/all', methods=['GET'])
@@ -164,6 +176,7 @@ def update_supplier(supplier_id):
             return jsonify({'error': 'Fournisseur introuvable'}), 404
 
         # Mise à jour des infos fournisseur
+        supplier.nc = data.get('nc')
         supplier.name = name
         supplier.status = status['name']
         supplier.address = data.get('address')
@@ -188,6 +201,14 @@ def update_supplier(supplier_id):
         for product in new_products:
             product_name = product.get('productName')
             supplier_price = product.get('price')
+            existingProduct = Stock.query.filter(name = product_name).first()
+            
+            if(existingProduct):
+                with open('dinhoseller\\application.settings\\application.setting.json', "r", encoding="utf-8") as f:
+                    app_settings = json.load(f)
+                
+                if(product.price >= (existingProduct.price - existingProduct.price*app_settings.get('BENEF'))):
+                    existingProduct.price = product.price + product.price*app_settings.get('BENEF')
 
             new_product_names.add(product_name)
 
@@ -198,7 +219,7 @@ def update_supplier(supplier_id):
                 # Ajout d'un nouveau produit
                 new_product = ProductSupplied(
                     supplierName=supplier.name,
-                    productName=product_name,
+                    productName=product_name.strip(),
                     supplierPrice=supplier_price
                 )
                 db.session.add(new_product)

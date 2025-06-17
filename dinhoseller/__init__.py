@@ -76,7 +76,7 @@ def create_app(config_class=None):
         from dinhoseller.manage_user.routes import user_bp
         from dinhoseller.manage_charge.routes import charge_bp
         from dinhoseller.manage_notication.routes import notication_bp
-        from dinhoseller.manage_session.routes import session_bp    
+        from dinhoseller.manage_session.routes import session_bp
 
         app.register_blueprint(auth, url_prefix='/api/auth')
         app.register_blueprint(client_bp, url_prefix='/api/clients')
