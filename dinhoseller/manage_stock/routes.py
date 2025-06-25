@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt, jwt_required
 from dinhoseller import db
@@ -9,16 +10,15 @@ import json
 
 stock_bp = Blueprint('stock_bp', __name__)
 
-# @stock_bp.route('/add', methods=['POST'])
-# def add_all_product():
-
-
+# Chemin absolu vers application.setting.json
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SETTINGS_FILE = os.path.join(BASE_DIR, 'application.settings', 'application.setting.json')
 
 # Create Stock
 @stock_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_stock():
-    # try:
+    try:
         data = request.json
         
         if not data:
@@ -48,7 +48,7 @@ def create_stock():
         # Get the highest supplier price
         highest_price = max(product.supplierPrice for product in products_supplied)
 
-        with open('dinhoseller\\application.settings\\application.setting.json', "r", encoding="utf-8") as f:
+        with open('SETTINGS_FILE', "r", encoding="utf-8") as f:
             app_settings = json.load(f)
 
         benef = app_settings.get('BENEF')
@@ -77,9 +77,9 @@ def create_stock():
         db.session.commit()
 
         return jsonify(stock.to_dict()), 201
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': 'Erreur inatendu'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get All Stocks
 @stock_bp.route('/all', methods=['GET'])

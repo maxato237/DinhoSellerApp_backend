@@ -14,9 +14,14 @@ from dinhoseller import db
 from dinhoseller.manage_session.model import Session
 from dinhoseller.manage_user.model import User
 from werkzeug.security import generate_password_hash,check_password_hash
-# import jwt
+import os
+
 
 auth = Blueprint('auth', __name__)
+# Chemin absolu vers application.setting.json
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SETTINGS_FILE = os.path.join(BASE_DIR, 'application.settings', 'application.setting.json')
+
 
 
 @auth.route('/login', methods=['POST'])
@@ -74,9 +79,6 @@ def login():
 @auth.route('/logout', methods=['POST'])
 def logout():
     return jsonify({'message': 'Logout successful.'}), 200
-
-
-SETTINGS_FILE = "dinhoseller\\application.settings\\application.setting.json"
 
 # Lire les paramètres
 @auth.route('/all', methods=['GET'])

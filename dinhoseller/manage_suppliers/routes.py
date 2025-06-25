@@ -1,4 +1,5 @@
 from datetime import date, datetime
+import os
 import random
 from faker import Faker
 from flask import Blueprint, json, request, jsonify
@@ -12,10 +13,13 @@ from collections import defaultdict
 faker = Faker()
 supplier_bp = Blueprint('supplier_bp', __name__)
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SETTINGS_FILE = os.path.join(BASE_DIR, 'application.settings', 'application.setting.json')
+
 @supplier_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_supplier():
-    # try:
+    try:
         data = request.get_json()
 
         # Vérification des champs requis
@@ -89,7 +93,7 @@ def create_supplier():
             existingProduct = Stock.query.filter(name == productName).first()
             
             if(existingProduct):
-                with open('dinhoseller\\application.settings\\application.setting.json', "r", encoding="utf-8") as f:
+                with open('SETTINGS_FILE', "r", encoding="utf-8") as f:
                     app_settings = json.load(f)
                 
                 if(product.price >= (existingProduct.price - existingProduct.price*app_settings.get('BENEF'))):
@@ -111,9 +115,9 @@ def create_supplier():
         db.session.commit()
         print('le fournisseur :', supplier)
         return jsonify(supplier.to_dict()), 201
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': f"Erreur lors de l'ajout du fournisseur : {str(e)}"}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f"Erreur lors de l'ajout du fournisseur : {str(e)}"}), 500
 
 # Get All Suppliers
 @supplier_bp.route('/all', methods=['GET'])
@@ -204,7 +208,7 @@ def update_supplier(supplier_id):
             existingProduct = Stock.query.filter(name == product_name).first()
             
             if(existingProduct):
-                with open('dinhoseller\\application.settings\\application.setting.json', "r", encoding="utf-8") as f:
+                with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
                     app_settings = json.load(f)
                 
                 if(product.price >= (existingProduct.price - existingProduct.price*app_settings.get('BENEF'))):
