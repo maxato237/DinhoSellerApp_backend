@@ -40,11 +40,16 @@ def create_app(config_class=None):
         app.config.from_object(config_class)
     else:
         # Utilisation de la configuration définie dans le fichier de config
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.SQL_CONNEXION['user']}:" \
-                                                f"{config.SQL_CONNEXION['password']}@" \
-                                                f"{config.SQL_CONNEXION['host']}:" \
-                                                f"{config.SQL_CONNEXION['port']}/" \
-                                                f"{config.SQL_CONNEXION['database']}"
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.AWS_DB_CONNEXION['user']}:" \
+                                                f"{config.AWS_DB_CONNEXION['password']}@" \
+                                                f"{config.AWS_DB_CONNEXION['host']}:" \
+                                                f"{config.AWS_DB_CONNEXION['port']}/" \
+                                                f"{config.AWS_DB_CONNEXION['database']}"
+        # app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{config.POSTGRESQL_CONNEXION['user']}:" \
+        #                                         f"{config.POSTGRESQL_CONNEXION['password']}@" \
+        #                                         f"{config.POSTGRESQL_CONNEXION['host']}:" \
+        #                                         f"{config.POSTGRESQL_CONNEXION['port']}/" \
+        #                                         f"{config.POSTGRESQL_CONNEXION['database']}"
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.config.from_object(config)
 

@@ -160,7 +160,7 @@ def get_supplier(supplier_id):
 @supplier_bp.route('/update/<int:supplier_id>', methods=['PUT'])
 @jwt_required()
 def update_supplier(supplier_id):
-    try:
+    # try:
         data = request.json
 
         name = data.get('name')
@@ -201,7 +201,7 @@ def update_supplier(supplier_id):
         for product in new_products:
             product_name = product.get('productName')
             supplier_price = product.get('price')
-            existingProduct = Stock.query.filter(name = product_name).first()
+            existingProduct = Stock.query.filter(name == product_name).first()
             
             if(existingProduct):
                 with open('dinhoseller\\application.settings\\application.setting.json', "r", encoding="utf-8") as f:
@@ -234,10 +234,10 @@ def update_supplier(supplier_id):
 
         return jsonify(supplier.to_dict()), 200
 
-    except Exception as e:
-        db.session.rollback()
-        print(str(e))
-        return jsonify({'error': 'Erreur dans la mise à jour'}), 500
+    # except Exception as e:
+    #     db.session.rollback()
+    #     print(str(e))
+    #     return jsonify({'error': 'Erreur dans la mise à jour'}), 500
 
 # Delete Supplier
 @supplier_bp.route('/delete/<int:supplier_id>', methods=['DELETE'])

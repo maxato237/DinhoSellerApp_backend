@@ -49,7 +49,7 @@ def create_user():
             country=None,
             city=None,
             personnal_mail_address=None,
-            address_mail=None,
+            address_mail=data.get('email'),
             post=None,
             start_date_of_hire=None,
             contract_type=None,
@@ -64,99 +64,6 @@ def create_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Erreur inatendu'}), 500
-
-
-@user_bp.route('/addemployeesbyarray', methods=['POST'])
-def add_employees_by_array():
-    try:
-        employees = request.get_json()
-        
-        if not isinstance(employees, list):
-            return jsonify({"error": "Le format des données doit être un tableau d'employés"}), 400
-
-        results = []
-        for index, data in enumerate(employees):
-            try:
-                # Vérification des champs obligatoires
-                required_fields = ["lastname", "firstname", "phone", "role_id"]
-                for field in required_fields:
-                    if field not in data:
-                        raise ValueError(f"Le champ {field} est requis")
-
-                # Vérifier si l'utilisateur existe déjà
-                existing_user = User.query.filter(User.phone == data.get('phone')).first()
-                existing_details = UserDetails.query.filter(
-                    (UserDetails.personnal_mail_address == data.get('personnal_mail_address')) |
-                    (UserDetails.address_mail == data.get('address_mail'))
-                ).first()
-
-                if existing_user:
-                    raise ValueError("Un utilisateur avec ce numéro de téléphone existe déjà")
-                if existing_details:
-                    raise ValueError("Un utilisateur avec cette adresse e-mail existe déjà")
-
-                # Hachage du mot de passe (mot de passe par défaut)
-                hashed_password = generate_password_hash("Drinh0access#", method='pbkdf2:sha256', salt_length=8)
-
-                # Création de l'utilisateur
-                new_user = User(
-                    lastname=data["lastname"],
-                    firstname=data["firstname"],
-                    phone=data["phone"],
-                    password=hashed_password,
-                    role_id=data["role_id"]['code']
-                )
-                db.session.add(new_user)
-                db.session.flush()
-
-                # Détails utilisateur
-                new_user_details = UserDetails(
-                    user_id=new_user.id,
-                    date_of_birth=isoparse(data["date_of_birth"]) if data.get("date_of_birth") else None,
-                    genre=data["genre"]["name"] if isinstance(data.get("genre"), dict) else None,
-                    address=data.get("address"),
-                    country=data["country"]["name"] if isinstance(data.get("country"), dict) else None,
-                    city=data.get("city"),
-                    personnal_mail_address=data.get("personnal_mail_address"),
-                    address_mail=data.get("address_mail"),
-                    post=data.get("post"),
-                    start_date_of_hire=isoparse(data["start_date_of_hire"]) if data.get("start_date_of_hire") else None,
-                    contract_type=data["contract_type"]["name"] if isinstance(data.get("contract_type"), dict) else None,
-                    salary=data.get("salary"),
-                    department=data["department"]["name"] if isinstance(data.get("department"), dict) else None,
-                )
-                db.session.add(new_user_details)
-
-                results.append({
-                    "index": index,
-                    "phone": data["phone"],
-                    "status": "success"
-                })
-
-            except ValueError as ve:
-                results.append({
-                    "index": index,
-                    "phone": data.get("phone"),
-                    "status": "error",
-                    "message": str(ve)
-                })
-            except Exception as e:
-                results.append({
-                    "index": index,
-                    "phone": data.get("phone"),
-                    "status": "error",
-                    "message": "Erreur interne lors de l'ajout de cet employé"
-                })
-
-        db.session.commit()
-        return jsonify({"message": "Traitement terminé", "results": results}), 207  # 207 = Multi-Status
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inattendue'}), 500
-
-
-
 
 @jwt_required()
 @user_bp.route('/addemployee', methods=['POST'])
@@ -221,7 +128,6 @@ def add_employee():
         return jsonify({'error': 'Erreur inatendu'}), 500
 
 
-# Get All Users
 @user_bp.route('/all', methods=['GET'])
 @jwt_required()
 def get_users():
@@ -235,17 +141,99 @@ def get_users():
     except Exception as e:
         return jsonify({'error': 'Erreur inattendue'}), 500
 
-# Get User by ID
-@user_bp.route('/users/<int:user_id>', methods=['GET'])
+@user_bp.route('/userById/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({'error': 'Utilisateur introuvable'}), 404
         return jsonify(user.to_dict()), 200
     except Exception as e:
         return jsonify({'error': 'Erreur inatendu'}), 500
+    
+@user_bp.route('/accountDetails', methods=['GET'])
+@jwt_required()
+def my_account_details():
+    try:
+        decodeToken = get_jwt()
+        user = User.query.get(decodeToken.get("sub"))
+        if not user:
+            print('go')
+            return jsonify({'error': 'Utilisateur introuvable'}), 404
+        return jsonify(user.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': 'Erreur inatendu'}), 500
+
+@user_bp.route('/updatemydetails', methods=['PUT'])
+@jwt_required()
+def update_my_details():
+    try:
+        user_id = get_jwt().get("sub")
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Utilisateur introuvable'}), 404
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Veuillez remplir les champs obligatoires'}), 400
+
+        required_fields = ['lastname', 'firstname', 'phone', 'role_id']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Le champ {field} est requis'}), 400
+
+        # Vérifier duplication du numéro de téléphone
+        existing_user = User.query.filter(User.phone == data.get('phone'), User.id != user.id).first()
+        if existing_user:
+            return jsonify({"error": "Un autre utilisateur avec ce numéro de téléphone existe déjà"}), 400
+
+        # Vérifier duplication des adresses mail
+        existing_details = UserDetails.query.filter(
+            ((UserDetails.personnal_mail_address == data.get('personnal_mail_address')) |
+             (UserDetails.address_mail == data.get('address_mail'))),
+            UserDetails.user_id != user.id
+        ).first()
+        if existing_details:
+            return jsonify({"error": "Un autre utilisateur avec cette adresse e-mail existe déjà"}), 400
+
+        # Mise à jour de l'utilisateur
+        user.lastname = data['lastname']
+        user.firstname = data['firstname']
+        user.phone = data['phone']
+        user.role_id = data['role_id']['code'] if isinstance(data['role_id'], dict) else data['role_id']
+
+        # Récupérer ou créer les détails utilisateur
+        details = UserDetails.query.filter_by(user_id=user.id).first()
+        if not details:
+            details = UserDetails(user_id=user.id)
+            db.session.add(details)
+
+        # Mise à jour conditionnelle des champs UserDetails
+        if 'date_of_birth' in data and data['date_of_birth']:
+            details.date_of_birth = isoparse(data['date_of_birth']).date()
+        if 'genre' in data:
+            details.genre = data['genre']['name'] if isinstance(data['genre'], dict) else data['genre']
+        if 'address' in data:
+            details.address = data['address']
+        if 'country' in data:
+            details.country = data['country']['name'] if isinstance(data['country'], dict) else data['country']
+        if 'city' in data:
+            details.city = data['city']
+        if 'personnal_mail_address' in data:
+            details.personnal_mail_address = data['personnal_mail_address']
+        if 'address_mail' in data:
+            details.address_mail = data['address_mail']
+
+        db.session.commit()
+        return jsonify(user.to_dict()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erreur lors de la mise à jour : {e}")
+        return jsonify({'error': 'Erreur inattendue lors de la mise à jour'}), 500
+
+        
 
 @jwt_required()
 @user_bp.route('/update/<int:user_id>', methods=['PUT'])
@@ -264,7 +252,7 @@ def update_user(user_id):
             if field not in data:
                 return jsonify({'error': f'Le champ {field} est requis'}), 400
 
-        # Vérification des duplications (numéro ou email déjà utilisé par un autre utilisateur)
+        # Vérification duplication numéro ou email
         existing_user = User.query.filter(User.phone == data.get('phone'), User.id != user.id).first()
         existing_details = UserDetails.query.filter(
             ((UserDetails.personnal_mail_address == data.get('personnal_mail_address')) |
@@ -276,7 +264,7 @@ def update_user(user_id):
         if existing_details:
             return jsonify({"error": "Un autre utilisateur avec cette adresse e-mail existe déjà"}), 400
 
-        # Mise à jour des infos de base
+        # Mise à jour des données User
         user.lastname = data['lastname']
         user.firstname = data['firstname']
         user.phone = data['phone']
@@ -284,30 +272,44 @@ def update_user(user_id):
 
         details = UserDetails.query.filter_by(user_id=user.id).first()
         if not details:
-            details = UserDetails(user_id=user.id)
+            return jsonify({'error': 'Les détails de l\'utilisateur sont introuvables'}), 404
 
-        # Mise à jour ou création des détails
-        details.date_of_birth = isoparse(data["date_of_birth"]) if "date_of_birth" in data and data["date_of_birth"] else None
-        details.genre = data["genre"]["name"] if "genre" in data and isinstance(data["genre"], dict) else None
-        details.address = data.get("address")
-        details.country = data["country"]["name"] if "country" in data and isinstance(data["country"], dict) else None
-        details.city = data.get("city")
-        details.personnal_mail_address = data.get("personnal_mail_address")
-        details.address_mail = data.get("address_mail")
-        details.post = data.get("post")
-        details.start_date_of_hire = isoparse(data["start_date_of_hire"]) if "start_date_of_hire" in data and data["start_date_of_hire"] else None
-        details.contract_type = data["contract_type"]["name"] if "contract_type" in data and isinstance(data["contract_type"], dict) else None
-        details.salary = data.get("salary")
-        details.department = data["department"]["name"] if "department" in data and isinstance(data["department"], dict) else None
+        # Mise à jour conditionnelle des détails
+        if 'date_of_birth' in data and data['date_of_birth']:
+            details.date_of_birth = isoparse(data['date_of_birth']).date()
+        if 'genre' in data:
+            details.genre = data['genre']['name'] if isinstance(data['genre'], dict) else data['genre']
+        if 'address' in data:
+            details.address = data['address']
+        if 'country' in data:
+            details.country = data['country']['name'] if isinstance(data['country'], dict) else data['country']
+        if 'city' in data:
+            details.city = data['city']
+        if 'personnal_mail_address' in data:
+            details.personnal_mail_address = data['personnal_mail_address']
+        if 'address_mail' in data:
+            details.address_mail = data['address_mail']
+        if 'post' in data:
+            details.post = data['post']
+        if 'start_date_of_hire' in data and data['start_date_of_hire']:
+            details.start_date_of_hire = isoparse(data['start_date_of_hire']).date()
+        if 'contract_type' in data:
+            details.contract_type = data['contract_type']
+        if 'salary' in data:
+            details.salary = float(data['salary']) if data['salary'] is not None else None
+        if 'group' in data:
+            details.group = data['group']
+        if 'department' in data:
+            details.department = data['department']
 
         db.session.commit()
-
         return jsonify(user.to_dict()), 200
 
     except Exception as e:
         db.session.rollback()
         print(f"Erreur lors de la mise à jour : {e}")
         return jsonify({'error': 'Erreur inattendue lors de la mise à jour'}), 500
+
 
 @user_bp.route('/delete/<int:user_id>', methods=['DELETE'])
 @jwt_required()

@@ -12,7 +12,7 @@ invoice_bp = Blueprint('invoice_bp', __name__)
 @invoice_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_invoice():
-    # try:
+    try:
         data = request.json
         if not data:
             return jsonify({'error': 'No input data provided'}), 400
@@ -40,7 +40,7 @@ def create_invoice():
                 user_id=int(decodeToken.get("sub")),
                 dateAdded=date_added,
             )
-            # Important : ici, le code est généré avec verrou
+            
             invoice.code_facture = invoice.generate_invoice_code()
             db.session.add(invoice)
             db.session.flush()
@@ -63,12 +63,12 @@ def create_invoice():
             db.session.commit()
         return jsonify( {'message': invoice.to_dict()} ), 201
 
-    # except SQLAlchemyError as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': f'Erreur de base de données'}), 500
-    # except Exception as e:
-    #     db.session.rollback()
-    #     return jsonify({'error': f'Erreur inattendue'}), 500
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': f'Erreur de base de données'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Erreur inattendue'}), 500
 
 
 

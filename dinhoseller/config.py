@@ -1,8 +1,16 @@
 import os
 
 DISTANT_DB_CONNEXION = {
-    'host': 'localhost',
-    'user': 'maxime',
+    'host': 'dpg-d1db1ber433s73f2ok20-a',
+    'user': 'drinhoseller',
+    'password': 'wudfQuSt8ZuQRiXAL46X5DNJWVVVJnJK',
+    'database': 'drinhosellerbd',
+    'port': '5432'
+}
+
+AWS_DB_CONNEXION = {
+    'host': 'drinhoseller-1.cvu4s6ckuv7q.eu-north-1.rds.amazonaws.com',
+    'user': 'admin',
     'password': '12Monkeys#',
     'database': 'dinhosellerbd',
     'port': '3306'
@@ -14,6 +22,14 @@ SQL_CONNEXION = {
     'password': '',
     'database': 'dinhosellerbd',
     'port': '3306'
+}
+
+POSTGRESQL_CONNEXION = {
+    'host': 'localhost',
+    'user': 'postgres',
+    'password': '12Monkeys#',
+    'database': 'dinhosellerbd',
+    'port': '5432'
 }
 
 

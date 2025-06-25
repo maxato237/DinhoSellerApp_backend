@@ -74,7 +74,7 @@ class StockMigration(db.Model):
         }
 
     def __repr__(self):
-        return f"<StockMigration {self.id} de {self.quantite} pour l'article {self.article_id}>"
+        return f"<StockMigration {self.id} de {self.quantite} pour l'article {self.stock_id}>"
     
    
 

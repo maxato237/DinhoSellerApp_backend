@@ -18,7 +18,7 @@ stock_bp = Blueprint('stock_bp', __name__)
 @stock_bp.route('/add', methods=['POST'])
 @jwt_required()
 def create_stock():
-    try:
+    # try:
         data = request.json
         
         if not data:
@@ -76,15 +76,10 @@ def create_stock():
         db.session.add(stock)
         db.session.commit()
 
-        for supplier_data in data['suppliers']:
-            supplier = Supplier.query.filter_by(name=supplier_data['supplierName']).first()
-            supplier.products.append(stock)
-            db.session.commit()
-
         return jsonify(stock.to_dict()), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu'}), 500
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'error': 'Erreur inatendu'}), 500
 
 # Get All Stocks
 @stock_bp.route('/all', methods=['GET'])

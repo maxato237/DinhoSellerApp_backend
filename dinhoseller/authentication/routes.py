@@ -73,7 +73,6 @@ def login():
 
 @auth.route('/logout', methods=['POST'])
 def logout():
-    # implémentation la logique de déconnexion, comme la suppression de la session utilisateur
     return jsonify({'message': 'Logout successful.'}), 200
 
 
@@ -86,21 +85,34 @@ def get_settings():
         data = json.load(f)
     return jsonify(data), 200
 
+def parse_float(value, default=0.0):
+    try:
+        if isinstance(value, (float, int)):
+            return float(value)
+        value_str = str(value).replace(',', '.')
+        return float(value_str)
+    except (ValueError, TypeError):
+        return default
+
 # Modifier un ou plusieurs paramètres
 @auth.route('/update', methods=['PUT'])
 def update_settings():
     updates = request.json
     with open(SETTINGS_FILE, 'r') as f:
         settings = json.load(f)
+    
+    updates['TVA'] = parse_float(updates.get('TVA', settings.get('TVA', 0))) / 100
+    updates['PVC'] = parse_float(updates.get('PVC', settings.get('PVC', 0))) / 100
+    updates['BENEF'] = parse_float(updates.get('BENEF', settings.get('BENEF', 0))) / 100
+    updates['ECOMP'] = parse_float(updates.get('ECOMP', settings.get('ECOMP', 0))) / 100
+    updates['PRECOMPTE'] = parse_float(updates.get('PRECOMPTE', settings.get('PRECOMPTE', 0))) / 100
 
     settings.update(updates)
 
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f, indent=2)
 
-    return jsonify({"message": "Settings updated", "settings": settings}), 200
-
-
+    return jsonify({ "settings": settings}), 200
 
 # @auth.route('/resetpassword/<phone>', methods=['GET'])
 # def resetpassword(phone):
@@ -121,7 +133,6 @@ def update_settings():
 
 #     except Exception as e:
 #         return jsonify({"message": "Processing errors"}),500
-
 
 def refresh_token(phone):
     token_payload = {
