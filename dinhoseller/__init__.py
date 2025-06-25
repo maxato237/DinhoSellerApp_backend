@@ -36,7 +36,7 @@ def create_app(config_class=None):
     CORS(app,
          resources={r"/api/*": {"origins": [
              "http://localhost:4200",
-             "https://drinhosellerapp-backend.onrender.com"
+             "https://drinhosellerapp-fontend.onrender.com"
          ]}},
          supports_credentials=True,
          expose_headers=["Content-Type", "Authorization"],
