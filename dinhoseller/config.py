@@ -9,7 +9,7 @@ DISTANT_DB_CONNEXION = {
 }
 
 AWS_DB_CONNEXION = {
-    'host': 'drinhoseller-1.cvu4s6ckuv7q.eu-north-1.rds.amazonaws.com',
+    'host': 'database-1.cvu4s6ckuv7q.eu-north-1.rds.amazonaws.com',
     'user': 'admin',
     'password': '12Monkeys#',
     'database': 'dinhosellerbd',
