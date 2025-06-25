@@ -33,7 +33,15 @@ def create_app(config_class=None):
     app = Flask(__name__)
 
 
-    CORS(app, supports_credentials=True)
+    CORS(app,
+         resources={r"/api/*": {"origins": [
+             "http://localhost:4200",
+             "https://drinhosellerapp-backend.onrender.com"
+         ]}},
+         supports_credentials=True,
+         expose_headers=["Content-Type", "Authorization"],
+         allow_headers=["Content-Type", "Authorization", "X-Requested-With"]
+    )
 
         # Charge la configuration fournie, sinon utilise la configuration par défaut
     if config_class:
