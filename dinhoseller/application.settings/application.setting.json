@@ -1,15 +1,15 @@
 {
-  "BENEF": null,
-  "ECOMP": null,
-  "PRECOMPTE": null,
-  "PVC": null,
-  "TVA": null,
-  "NC": null,
-  "Email": null,
-  "Banque": null,
-  "CompteB": null,
-  "Orange": null,
-  "MTN": null,
-  "Address": null,
-  "isSuperAdminConfigured": false
+  "BENEF": 0.22,
+  "ECOMP": 0.0,
+  "PRECOMPTE": 0.02,
+  "PVC": 0.22,
+  "TVA": 0.1925,
+  "NC": "18874HNN3924JKH3",
+  "Email": "dinhoseller@gmail.com",
+  "Banque": "ATLANTIQUE",
+  "CompteB": "1233443224443",
+  "Orange": "698916150",
+  "MTN": "654837863",
+  "Address": "Yaound\u00e9, Nkolbisson",
+  "isSuperAdminConfigured": true
 }

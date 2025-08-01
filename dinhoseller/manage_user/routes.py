@@ -233,12 +233,10 @@ def update_my_details():
         print(f"Erreur lors de la mise à jour : {e}")
         return jsonify({'error': 'Erreur inattendue lors de la mise à jour'}), 500
 
-        
-
 @jwt_required()
 @user_bp.route('/update/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
-    try:
+    # try:
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Employé introuvable'}), 404
@@ -294,21 +292,21 @@ def update_user(user_id):
         if 'start_date_of_hire' in data and data['start_date_of_hire']:
             details.start_date_of_hire = isoparse(data['start_date_of_hire']).date()
         if 'contract_type' in data:
-            details.contract_type = data['contract_type']
+            details.contract_type = data['contract_type']['name'] if isinstance(data['contract_type'], dict) else data['contract_type']
         if 'salary' in data:
             details.salary = float(data['salary']) if data['salary'] is not None else None
         if 'group' in data:
             details.group = data['group']
         if 'department' in data:
-            details.department = data['department']
+            details.department = data['department']['name'] if isinstance(data['department'], dict) else data['department']
 
         db.session.commit()
         return jsonify(user.to_dict()), 200
 
-    except Exception as e:
-        db.session.rollback()
-        print(f"Erreur lors de la mise à jour : {e}")
-        return jsonify({'error': 'Erreur inattendue lors de la mise à jour'}), 500
+    # except Exception as e:
+    #     db.session.rollback()
+    #     print(f"Erreur lors de la mise à jour : {e}")
+    #     return jsonify({'error': 'Erreur inattendue lors de la mise à jour'}), 500
 
 
 @user_bp.route('/delete/<int:user_id>', methods=['DELETE'])

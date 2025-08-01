@@ -52,17 +52,21 @@ class Supplier(db.Model):
     
 
 class ProductSupplied(db.Model):
-    supplierName = db.Column(db.String(255), nullable=False)
-    productName = db.Column(db.String(255), nullable=False)
-    supplierPrice = db.Column(db.Integer, nullable=False)
+    __tablename__ = 'product_supplied'
 
-    __table_args__ = (
-        db.PrimaryKeyConstraint('supplierName', 'productName'),
-    )
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
+    supplier_name = db.Column(db.String(255), nullable=False)
+    product_name = db.Column(db.String(255), nullable=False)
+    supplier_price = db.Column(db.Integer, nullable=False)
+
+    supplier = db.relationship('Supplier', backref=db.backref('supplied_products', lazy='dynamic', cascade='all, delete-orphan'))
 
     def to_dict(self):
         return {
-            'supplierName': self.supplierName,
-            'productName': self.productName,
-            'supplierPrice': self.supplierPrice
+            'id': self.id,
+            'supplier_id': self.supplier_id,
+            'supplierName': self.supplier_name,
+            'productName': self.product_name,
+            'supplierPrice': self.supplier_price
         }

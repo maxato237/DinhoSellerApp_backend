@@ -164,84 +164,81 @@ def get_supplier(supplier_id):
 @supplier_bp.route('/update/<int:supplier_id>', methods=['PUT'])
 @jwt_required()
 def update_supplier(supplier_id):
-    # try:
-        data = request.json
+    try:
+        data = request.get_json()
 
-        name = data.get('name')
-        status = data.get('status')
-        phone = data.get('phone')
-        preferredPaymentMethod = data.get('preferredPaymentMethod')
-
-        if not name or not status or not phone or not preferredPaymentMethod:
+        required_fields = ['name', 'status', 'phone', 'preferredPaymentMethod']
+        if not all(data.get(f) for f in required_fields):
             return jsonify({'error': 'Champs requis manquants'}), 400
 
         supplier = Supplier.query.get(supplier_id)
         if not supplier:
             return jsonify({'error': 'Fournisseur introuvable'}), 404
 
-        # Mise à jour des infos fournisseur
+        # Mise à jour des informations principales
         supplier.nc = data.get('nc')
-        supplier.name = name
-        supplier.status = status['name']
+        supplier.name = data['name']
+        supplier.status = data['status']['name']
         supplier.address = data.get('address')
         supplier.city = data.get('city')
         supplier.postal_code = data.get('postal_code')
-        supplier.country = data['country']['name'] if 'country' in data else None
-        supplier.phone = phone
+        supplier.country = data['country']['name'] if data.get('country') else None
+        supplier.phone = data['phone']
         supplier.email = data.get('email')
         supplier.website = data.get('website')
-        supplier.preferred_payment_method = preferredPaymentMethod['name']
+        supplier.preferred_payment_method = data['preferredPaymentMethod']['name']
         supplier.addedAt = datetime.utcnow()
 
-        # Traitement des produits fournis
+        # --- Traitement des produits fournis ---
         new_products = data.get('productsSupplied', [])
 
-        # Récupérer tous les produits actuels de ce fournisseur
-        existing_products = ProductSupplied.query.filter_by(supplierName=supplier.name).all()
-        existing_products_dict = {p.productName: p for p in existing_products}
+        # Récupération des produits existants liés au fournisseur
+        existing_products = ProductSupplied.query.filter_by(supplier_id=supplier.id).all()
+        existing_dict = {p.product_name: p for p in existing_products}
+        new_names_set = set()
 
-        # Récupérer les noms des nouveaux produits
-        new_product_names = set()
+        # Paramètre BENEF à partir du fichier settings
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            app_settings = json.load(f)
+        benef = app_settings.get('BENEF', 0.2)  # valeur par défaut 20%
+
         for product in new_products:
-            product_name = product.get('productName')
+            product_name = product.get('productName', '').strip()
             supplier_price = product.get('price')
-            existingProduct = Stock.query.filter(name == product_name).first()
-            
-            if(existingProduct):
-                with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                    app_settings = json.load(f)
-                
-                if(product.price >= (existingProduct.price - existingProduct.price*app_settings.get('BENEF'))):
-                    existingProduct.price = product.price + product.price*app_settings.get('BENEF')
+            new_names_set.add(product_name)
 
-            new_product_names.add(product_name)
+            # Mise à jour du stock si besoin
+            stock = Stock.query.filter_by(name=product_name).first()
+            if stock and supplier_price >= stock.price * (1 - benef):
+                stock.price = supplier_price * (1 + benef)
 
-            if product_name in existing_products_dict:
-                # Mise à jour du prix
-                existing_products_dict[product_name].supplierPrice = supplier_price
+            if product_name in existing_dict:
+                # Mise à jour d’un produit existant
+                existing_dict[product_name].supplier_price = supplier_price
+                existing_dict[product_name].supplier_name = supplier.name  # synchro nom
             else:
-                # Ajout d'un nouveau produit
+                # Nouveau produit fourni
                 new_product = ProductSupplied(
-                    supplierName=supplier.name,
-                    productName=product_name.strip(),
-                    supplierPrice=supplier_price
+                    supplier_id=supplier.id,
+                    supplier_name=supplier.name,
+                    product_name=product_name,
+                    supplier_price=supplier_price,
                 )
                 db.session.add(new_product)
 
-        # Supprimer les produits qui ne sont plus dans la liste
-        for product_name, product_obj in existing_products_dict.items():
-            if product_name not in new_product_names:
+        # Suppression des anciens produits non présents dans la nouvelle liste
+        for product_name, product_obj in existing_dict.items():
+            if product_name not in new_names_set:
                 db.session.delete(product_obj)
 
-        # Commit global
         db.session.commit()
-
         return jsonify(supplier.to_dict()), 200
 
-    # except Exception as e:
-    #     db.session.rollback()
-    #     print(str(e))
-    #     return jsonify({'error': 'Erreur dans la mise à jour'}), 500
+    except Exception as e:
+        db.session.rollback()
+        print(str(e))
+        return jsonify({'error': 'Erreur dans la mise à jour'}), 500
+
 
 # Delete Supplier
 @supplier_bp.route('/delete/<int:supplier_id>', methods=['DELETE'])

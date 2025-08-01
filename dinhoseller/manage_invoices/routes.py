@@ -4,6 +4,9 @@ from flask_jwt_extended import get_jwt, jwt_required
 from dinhoseller import db
 from dinhoseller.manage_invoices.model import Invoice, Invoice_line
 from dateutil.parser import isoparse
+from dateutil.parser import parse
+
+from dinhoseller.manage_invoices.utilities import process_invoice_line
 from sqlalchemy.exc import SQLAlchemyError
 
 invoice_bp = Blueprint('invoice_bp', __name__)
@@ -15,15 +18,15 @@ def create_invoice():
     try:
         data = request.json
         if not data:
-            return jsonify({'error': 'No input data provided'}), 400
+            return jsonify({'error': 'Veillez remplir tous les champs de la facture'}), 400
 
         required_fields = ['status', 'HT', 'client', 'lignes']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
-            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+            return jsonify({'error': 'Veillez remplir tous les champs de la facture'}), 400
 
         date_added = isoparse(data['dateAdded']) if 'dateAdded' in data else datetime.utcnow()
-        echeance = datetime.strptime(data['echeance'], "%Y-%m-%d") if data.get('echeance') else None
+        echeance = parse(data['echeance']) if data.get('echeance') else None
         decodeToken = get_jwt()
 
         with db.session.begin():
@@ -60,6 +63,14 @@ def create_invoice():
                     invoice_id=invoice.num
                 )
                 db.session.add(invoice_line)
+
+                # Traitement du stock avec validation stricte
+                result = process_invoice_line(invoice_line, db.session)
+
+                if not result['success']:
+                    db.session.rollback()
+                    return jsonify({'error': result['error']}), 400
+
             db.session.commit()
         return jsonify( {'message': invoice.to_dict()} ), 201
 

@@ -4,6 +4,7 @@ import json
 import os
 import random
 import string
+import traceback
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required
 import jwt
@@ -20,7 +21,7 @@ import os
 auth = Blueprint('auth', __name__)
 # Chemin absolu vers application.setting.json
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SETTINGS_FILE = os.path.join(BASE_DIR, 'application.settings', 'application.setting.json')
+SETTINGS_FILE = os.path.join('dinhoseller','application.settings', 'application.setting.json')
 
 
 
@@ -83,9 +84,18 @@ def logout():
 # Lire les paramètres
 @auth.route('/all', methods=['GET'])
 def get_settings():
-    with open(SETTINGS_FILE, 'r') as f:
-        data = json.load(f)
-    return jsonify(data), 200
+    try:
+        if not os.path.exists(SETTINGS_FILE):
+            return jsonify({"error": f"Fichier non trouvé : {SETTINGS_FILE}"}), 500
+
+        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data), 200
+
+    except json.JSONDecodeError as e:
+        return jsonify({"error": f"Erreur JSON : {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Erreur interne : {str(e)}"}), 500
 
 def parse_float(value, default=0.0):
     try:
@@ -99,23 +109,34 @@ def parse_float(value, default=0.0):
 # Modifier un ou plusieurs paramètres
 @auth.route('/update', methods=['PUT'])
 def update_settings():
-    updates = request.json
-    with open(SETTINGS_FILE, 'r') as f:
-        settings = json.load(f)
+    try:
+        updates = request.json
+        print(os.path.exists(SETTINGS_FILE))
+        print(updates)
+        # Charger les paramètres actuels
+        with open(SETTINGS_FILE, 'r') as f:
+            settings = json.load(f)
+        print(SETTINGS_FILE)
+
+        # Champs nécessitant un traitement spécial
+        percent_fields = ['TVA', 'PVC', 'BENEF', 'ECOMP', 'PRECOMPTE']
+
+        for key, value in updates.items():
+            if key in percent_fields:
+                settings[key] = parse_float(value) / 100 if value is not None else 0.0
+            else:
+                settings[key] = value
+
+        # Sauvegarder
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
+
+        return jsonify({"settings": settings}), 200
+
+    except Exception as e:
+        traceback.print_exc() 
+        return jsonify({"error": f"Erreur interne : {str(e)}"}), 500
     
-    updates['TVA'] = parse_float(updates.get('TVA', settings.get('TVA', 0))) / 100
-    updates['PVC'] = parse_float(updates.get('PVC', settings.get('PVC', 0))) / 100
-    updates['BENEF'] = parse_float(updates.get('BENEF', settings.get('BENEF', 0))) / 100
-    updates['ECOMP'] = parse_float(updates.get('ECOMP', settings.get('ECOMP', 0))) / 100
-    updates['PRECOMPTE'] = parse_float(updates.get('PRECOMPTE', settings.get('PRECOMPTE', 0))) / 100
-
-    settings.update(updates)
-
-    with open(SETTINGS_FILE, 'w') as f:
-        json.dump(settings, f, indent=2)
-
-    return jsonify({ "settings": settings}), 200
-
 # @auth.route('/resetpassword/<phone>', methods=['GET'])
 # def resetpassword(phone):
 #     try:

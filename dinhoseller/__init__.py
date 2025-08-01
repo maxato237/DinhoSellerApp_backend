@@ -1,8 +1,12 @@
-from flask import Flask,json, jsonify
+import os
+import subprocess
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+import sys
+import shutil
 from dinhoseller import config
 
 db = SQLAlchemy()
@@ -29,9 +33,66 @@ def insert_initial_data():
 
 def create_app(config_class=None):
 
+    def resource_path(relative_path):
+        """Donne le chemin absolu (compatible PyInstaller et mode normal)."""
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        return os.path.join(os.path.abspath("."), relative_path)
 
+    # -- Gestion base de données SQLite --
+    db_path = config.SQLITE_DB_CONNEXION['database']
+    db_dir = os.path.dirname(db_path)
+    db_source_embedded = resource_path("dinho_local.db")
+
+    if not os.path.exists(db_dir):
+        try:
+            os.makedirs(db_dir)
+            subprocess.call(['attrib', '+h', db_dir])
+        except Exception as e:
+            print(f"Erreur création ou masquage dossier base: {e}")
+
+    if not os.path.exists(db_path):
+        try:
+            shutil.copy2(db_source_embedded, db_path)
+        except Exception as e:
+            print(f"Erreur copie base: {e}")
+
+    if os.path.exists(db_path):
+        try:
+            subprocess.call(['attrib', '+h', db_path])
+        except Exception as e:
+            print(f"Erreur masquage fichier base: {e}")
+
+    settings_path = config.Config.SETTINGS_FILE
+    settings_dir = os.path.dirname(settings_path)
+    settings_source_embedded = resource_path(os.path.join("dinhoseller", "application.settings", "application.setting.json"))
+
+    if not os.path.exists(settings_dir):
+        try:
+            os.makedirs(settings_dir)
+            subprocess.call(['attrib', '-h', settings_dir])
+        except Exception as e:
+            print(f"Erreur création ou masquage dossier settings: {e}")
+
+    if not os.path.exists(settings_path):
+        try:
+            shutil.copy2(settings_source_embedded, settings_path)
+            subprocess.call(['attrib', '-r', settings_path])
+        except Exception as e:
+            print(f"Erreur copie fichier settings: {e}")
+
+    if os.path.exists(settings_path):
+        try:
+            subprocess.call(['attrib', '-r', settings_path]) 
+            subprocess.call(['attrib', '-h', settings_path])
+        except Exception as e:
+            print(f"Erreur gestion attributs settings: {e}")
+
+
+    # -- Création de l'app Flask --
     app = Flask(__name__)
-
+    if config:
+        app.config.from_object(config)
 
     CORS(app,
          resources={r"/api/*": {"origins": [
@@ -48,11 +109,12 @@ def create_app(config_class=None):
         app.config.from_object(config_class)
     else:
         # Utilisation de la configuration définie dans le fichier de config
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.AWS_DB_CONNEXION['user']}:" \
-                                                f"{config.AWS_DB_CONNEXION['password']}@" \
-                                                f"{config.AWS_DB_CONNEXION['host']}:" \
-                                                f"{config.AWS_DB_CONNEXION['port']}/" \
-                                                f"{config.AWS_DB_CONNEXION['database']}"
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{config.SQLITE_DB_CONNEXION['database']}"
+        # app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{config.AWS_DB_CONNEXION['user']}:" \
+        #                                         f"{config.AWS_DB_CONNEXION['password']}@" \
+        #                                         f"{config.AWS_DB_CONNEXION['host']}:" \
+        #                                         f"{config.AWS_DB_CONNEXION['port']}/" \
+        #                                         f"{config.AWS_DB_CONNEXION['database']}"
         # app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{config.POSTGRESQL_CONNEXION['user']}:" \
         #                                         f"{config.POSTGRESQL_CONNEXION['password']}@" \
         #                                         f"{config.POSTGRESQL_CONNEXION['host']}:" \

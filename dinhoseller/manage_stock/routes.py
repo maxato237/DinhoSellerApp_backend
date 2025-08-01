@@ -48,7 +48,9 @@ def create_stock():
         # Get the highest supplier price
         highest_price = max(product.supplierPrice for product in products_supplied)
 
-        with open('SETTINGS_FILE', "r", encoding="utf-8") as f:
+        print(os.path.exists(SETTINGS_FILE))
+
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
             app_settings = json.load(f)
 
         benef = app_settings.get('BENEF')
@@ -172,7 +174,6 @@ def delete_stock(stock_id):
         db.session.rollback()
         return jsonify({'error': 'Erreur inatendu'}), 500
     
-
 # Create Stock Migration
 @stock_bp.route('/stock_migrations', methods=['POST'])
 @jwt_required()
