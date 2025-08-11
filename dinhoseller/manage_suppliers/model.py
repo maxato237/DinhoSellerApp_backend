@@ -49,24 +49,3 @@ class Supplier(db.Model):
             'user_id' : self.user_id,
             'products': [product.to_dict() for product in self.products] if self.products else None
         }
-    
-
-class ProductSupplied(db.Model):
-    __tablename__ = 'product_supplied'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
-    supplier_name = db.Column(db.String(255), nullable=False)
-    product_name = db.Column(db.String(255), nullable=False)
-    supplier_price = db.Column(db.Integer, nullable=False)
-
-    supplier = db.relationship('Supplier', backref=db.backref('supplied_products', lazy='dynamic', cascade='all, delete-orphan'))
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'supplier_id': self.supplier_id,
-            'supplierName': self.supplier_name,
-            'productName': self.product_name,
-            'supplierPrice': self.supplier_price
-        }

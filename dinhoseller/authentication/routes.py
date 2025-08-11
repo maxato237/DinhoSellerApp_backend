@@ -4,6 +4,7 @@ import json
 import os
 import random
 import string
+import sys
 import traceback
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required
@@ -17,11 +18,26 @@ from dinhoseller.manage_user.model import User
 from werkzeug.security import generate_password_hash,check_password_hash
 import os
 
-
 auth = Blueprint('auth', __name__)
-# Chemin absolu vers application.setting.json
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SETTINGS_FILE = os.path.join('dinhoseller','application.settings', 'application.setting.json')
+
+
+# Fonction utilitaire pour récupérer le chemin de base du projet
+def get_base_dir():
+    if getattr(sys, 'frozen', False):  # PyInstaller : mode exécutable
+        return sys._MEIPASS
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+# Construction du chemin absolu vers application.setting.json
+BASE_DIR = get_base_dir()
+SETTINGS_FILE = os.path.join(BASE_DIR, 'dinhoseller', 'application.settings', 'application.setting.json')
+
+# Chargement du fichier de configuration si nécessaire
+try:
+    with open(SETTINGS_FILE, 'r') as f:
+        app_settings = json.load(f)
+except Exception as e:
+    app_settings = {}
+    print(f"[ERROR] Impossible de charger application.setting.json : {e}")
 
 
 
@@ -84,7 +100,7 @@ def logout():
 # Lire les paramètres
 @auth.route('/all', methods=['GET'])
 def get_settings():
-    try:
+    # try:
         if not os.path.exists(SETTINGS_FILE):
             return jsonify({"error": f"Fichier non trouvé : {SETTINGS_FILE}"}), 500
 
@@ -92,10 +108,10 @@ def get_settings():
             data = json.load(f)
         return jsonify(data), 200
 
-    except json.JSONDecodeError as e:
-        return jsonify({"error": f"Erreur JSON : {str(e)}"}), 500
-    except Exception as e:
-        return jsonify({"error": f"Erreur interne : {str(e)}"}), 500
+    # except json.JSONDecodeError as e:
+    #     return jsonify({"error": f"Erreur JSON : {str(e)}"}), 500
+    # except Exception as e:
+    #     return jsonify({"error": f"Erreur interne : {str(e)}"}), 500
 
 def parse_float(value, default=0.0):
     try:

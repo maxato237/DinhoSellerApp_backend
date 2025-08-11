@@ -79,7 +79,7 @@ def get_client(client_id):
 @client_bp.route('/update/<int:client_id>', methods=['PUT'])
 @jwt_required()
 def update_client(client_id):
-    try:
+    # try:
         client = Client.query.get(client_id)
         if not client:
             return jsonify({'error': 'Client not found'}), 404
@@ -93,7 +93,7 @@ def update_client(client_id):
         if missing_fields:
             return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
-        client.nc=data.get('nc'),
+        client.nc=data.get('nc')
         client.name = data.get('name')
         client.principal_address = data.get('principal_address')
         client.facturation_address = data.get('facturation_address')
@@ -110,9 +110,9 @@ def update_client(client_id):
 
         db.session.commit()
         return jsonify(client.to_dict()), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Erreur inatendu lors de la mise à jour'}), 500
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return jsonify({'error': 'Erreur inatendu lors de la mise à jour'}), 500
 
 @client_bp.route('/delete/<int:client_id>', methods=['DELETE'])
 @jwt_required()

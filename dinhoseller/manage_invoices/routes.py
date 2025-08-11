@@ -81,8 +81,6 @@ def create_invoice():
         db.session.rollback()
         return jsonify({'error': f'Erreur inattendue'}), 500
 
-
-
 @invoice_bp.route('/code', methods=['GET'])
 @jwt_required()
 def get_invoice_code():
@@ -108,18 +106,17 @@ def get_invoice_code():
     except Exception as e:
         return jsonify({'error': 'Erreur inattendue'}), 500
 
-
 # Get All Invoices
-@invoice_bp.route('/invoices', methods=['GET'])
+@invoice_bp.route('/getAll', methods=['GET'])
 @jwt_required()
 def get_invoices():
     try:
         invoices = Invoice.query.all()
         if not invoices:
-            return jsonify({'message': 'No invoices found'}), 404
+            return jsonify({'error': 'Aucune factures trouvées'}), 404
         return jsonify([invoice.to_dict() for invoice in invoices]), 200
     except Exception as e:
-        return jsonify({'error': 'Erreur inatendu'}), 500
+        return jsonify({'error': 'Erreur inattendue'}), 500
 
 # Get Invoice by ID
 @invoice_bp.route('/invoices/<int:invoice_num>', methods=['GET'])

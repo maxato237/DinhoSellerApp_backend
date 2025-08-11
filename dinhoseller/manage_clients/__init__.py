@@ -1,1 +1,2 @@
 from dinhoseller.manage_clients.model import Client
+from dinhoseller.manage_clients.model import Groups_clients

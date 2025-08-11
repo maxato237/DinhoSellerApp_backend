@@ -65,8 +65,6 @@ class Invoice(db.Model):
             "invoice_lines": [line.to_dict() for line in self.invoice_lines] if self.invoice_lines else None,
             "products": [product.to_dict() for product in self.products] if self.products else None
         }
-
-
     
 class Invoice_line(db.Model):
     __tablename__ = 'invoice_lines'

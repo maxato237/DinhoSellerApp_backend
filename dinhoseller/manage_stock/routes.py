@@ -4,7 +4,6 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt, jwt_required
 from dinhoseller import db
 from dinhoseller.manage_stock.model import Stock, StockMigration
-from dinhoseller.manage_suppliers.model import ProductSupplied, Supplier
 import json
 
 
@@ -37,25 +36,6 @@ def create_stock():
 
         if existing_stock:
             return jsonify({'error': 'Ce produit existe déjà'}), 400
-        
-        # Find all supplier prices for the given product
-        product_name = data.get('name').strip()
-        products_supplied = ProductSupplied.query.filter_by(productName=product_name).all()
-
-        if not products_supplied:
-            return jsonify({'error': 'Pas de fournisseur existant pour ce produit'}), 404
-
-        # Get the highest supplier price
-        highest_price = max(product.supplierPrice for product in products_supplied)
-
-        print(os.path.exists(SETTINGS_FILE))
-
-        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-            app_settings = json.load(f)
-
-        benef = app_settings.get('BENEF')
-
-        price_with_benef = highest_price + highest_price * benef
 
         decodeToken = get_jwt()
 
@@ -70,8 +50,7 @@ def create_stock():
             brand=data.get('brand'),
             added_date=datetime.utcnow(),
             minimum_stock=data.get('minimum_stock'),
-            supplierlist=str(data['suppliers']),
-            price=price_with_benef,
+            price=data.get('price', 0.0),
             user_id=int(decodeToken.get("sub"))
         )
 
@@ -112,11 +91,7 @@ def get_stock(stock_id):
 @jwt_required()
 def get_products_supplied_by_product(product_name):
     try:
-        products_supplied = ProductSupplied.query.filter_by(productName=product_name.strip()).all()
-        if not products_supplied:
-            return jsonify({'error': 'Aucun fournisseur trouvé pour ce produit'}), 404
-        
-        suppliers_list = [supplier.to_dict() for supplier in products_supplied]
+        suppliers_list = []
 
         return jsonify(suppliers_list), 200
     except Exception as e:
@@ -150,7 +125,6 @@ def update_stock(user_id):
         stock.weight = data["weight"]
         stock.brand = data["brand"]
         stock.minimum_stock = data["minimum_stock"]
-        stock.supplierlist = str(data["suppliers"]),
 
         db.session.commit()
         return jsonify(stock.to_dict()), 200

@@ -47,9 +47,8 @@ def create_app(config_class=None):
     if not os.path.exists(db_dir):
         try:
             os.makedirs(db_dir)
-            subprocess.call(['attrib', '+h', db_dir])
         except Exception as e:
-            print(f"Erreur création ou masquage dossier base: {e}")
+            print(f"Erreur création dossier base: {e}")
 
     if not os.path.exists(db_path):
         try:
@@ -57,12 +56,7 @@ def create_app(config_class=None):
         except Exception as e:
             print(f"Erreur copie base: {e}")
 
-    if os.path.exists(db_path):
-        try:
-            subprocess.call(['attrib', '+h', db_path])
-        except Exception as e:
-            print(f"Erreur masquage fichier base: {e}")
-
+    # -- Gestion des fichiers de settings --
     settings_path = config.Config.SETTINGS_FILE
     settings_dir = os.path.dirname(settings_path)
     settings_source_embedded = resource_path(os.path.join("dinhoseller", "application.settings", "application.setting.json"))
@@ -70,23 +64,14 @@ def create_app(config_class=None):
     if not os.path.exists(settings_dir):
         try:
             os.makedirs(settings_dir)
-            subprocess.call(['attrib', '-h', settings_dir])
         except Exception as e:
-            print(f"Erreur création ou masquage dossier settings: {e}")
+            print(f"Erreur création dossier settings: {e}")
 
     if not os.path.exists(settings_path):
         try:
             shutil.copy2(settings_source_embedded, settings_path)
-            subprocess.call(['attrib', '-r', settings_path])
         except Exception as e:
             print(f"Erreur copie fichier settings: {e}")
-
-    if os.path.exists(settings_path):
-        try:
-            subprocess.call(['attrib', '-r', settings_path]) 
-            subprocess.call(['attrib', '-h', settings_path])
-        except Exception as e:
-            print(f"Erreur gestion attributs settings: {e}")
 
 
     # -- Création de l'app Flask --
@@ -95,7 +80,7 @@ def create_app(config_class=None):
         app.config.from_object(config)
 
     CORS(app,
-         resources={r"/api/*": {"origins": [
+         resources={r"/api/*": {"origins": ["file://",
              "http://localhost:4200",
              "https://drinhosellerapp-fontend.onrender.com"
          ]}},
@@ -137,10 +122,6 @@ def create_app(config_class=None):
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         return jsonify({'error': 'Votre session a expiré. Veuillez vous reconnecter.'}), 401
-    
-    @app.route('/api/')
-    def root():
-        return jsonify({'message': 'good job'})
 
     with app.app_context():
         from dinhoseller.authentication.routes import auth
